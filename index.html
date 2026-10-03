@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Estrategia BTC - Multi-Temporalidad</title>
+  <title>Estrategia BTC - Señales Automáticas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -47,16 +47,42 @@
       color: #fff;
       border-color: #2962ff;
     }
-    .alert-box {
-      padding: 15px;
-      border-radius: 6px;
-      background-color: #2b1f31;
-      border-left: 5px solid #ff4d4d;
-      font-weight: bold;
+    
+    /* Panel de Orden Automática */
+    .trade-panel {
+      background: #192233;
+      border: 1px solid #2a3852;
+      border-radius: 8px;
+      padding: 15px 20px;
       margin-bottom: 20px;
-      color: #ff6b6b;
-      line-height: 1.5;
     }
+    .signal-header {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #121826;
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 4px solid #555;
+    }
+    .card.entry { border-left-color: #ffb74d; }
+    .card.sl    { border-left-color: #ef5350; }
+    .card.tp1   { border-left-color: #26a69a; }
+    .card.tp2   { border-left-color: #00e676; }
+    
+    .card .label { font-size: 0.8rem; color: #9ba3af; font-weight: bold; text-transform: uppercase; }
+    .card .value { font-size: 1.2rem; font-weight: bold; margin-top: 4px; color: #fff; }
+
     .chart-box {
       background: #1e2738;
       border-radius: 8px;
@@ -65,7 +91,7 @@
     }
     canvas {
       width: 100% !important;
-      max-height: 200px;
+      max-height: 180px;
     }
   </style>
 </head>
@@ -73,7 +99,7 @@
 
 <div class="container">
   <div class="top-bar">
-    <h2 style="margin: 0; color: #4da6ff;">BTC/USDT: Divergencia Multi-Temporalidad</h2>
+    <h2 style="margin: 0; color: #4da6ff;">🤖 Bot Autónomo BTC: Divergencias & Niveles</h2>
     <div class="timeframe-selector">
       <button class="tf-btn" onclick="updateTimeframe('15m')">15m</button>
       <button class="tf-btn active" onclick="updateTimeframe('1h')">1H</button>
@@ -82,8 +108,27 @@
     </div>
   </div>
 
-  <div id="alertBox" class="alert-box">
-    Analizando temporalidad...
+  <!-- Panel de Orden Automático -->
+  <div class="trade-panel">
+    <div id="signalHeader" class="signal-header">Calculando parámetros...</div>
+    <div class="signal-grid">
+      <div class="card entry">
+        <div class="label">🎯 Entrada (Short)</div>
+        <div id="valEntry" class="value">-</div>
+      </div>
+      <div class="card sl">
+        <div class="label">🛑 Stop Loss (SL)</div>
+        <div id="valSL" class="value">-</div>
+      </div>
+      <div class="card tp1">
+        <div class="label">💰 Take Profit 1</div>
+        <div id="valTP1" class="value">-</div>
+      </div>
+      <div class="card tp2">
+        <div class="label">🚀 Take Profit 2</div>
+        <div id="valTP2" class="value">-</div>
+      </div>
+    </div>
   </div>
 
   <div class="chart-box"><canvas id="priceChart"></canvas></div>
@@ -93,34 +138,34 @@
 </div>
 
 <script>
-  // Banco de Datos Simulado para cada Temporalidad
+  // Banco de Datos por Temporalidad
   const datasets = {
     '15m': {
-      labels: ['14:00', '14:15', '14:30 (P1)', '14:45', '15:00', '15:15 (P2)', '15:30', '15:45'],
-      price:  [63100, 63400, 63900, 63500, 63700, 64100, 63600, 63200],
-      rsi:    [52,    65,    74,    58,    62,    66,    48,    40],
-      macd:   [40,    110,   210,   90,    130,   150,   -20,   -90],
-      volume: [450,   600,   1200,  500,   550,   750,   800,   950],
+      labels: ['14:00', '14:15', '14:30 (P1)', '14:45 (Valle)', '15:00', '15:15 (P2)', '15:30', '15:45'],
+      price:  [63100, 63400, 63900, 63300, 63700, 64100, 63600, 63200],
+      rsi:    [52,    65,    74,    55,    62,    66,    48,    40],
+      macd:   [40,    110,   210,   80,    130,   150,   -20,   -90],
+      volume: [450,   600,   1200,  480,   550,   750,   800,   950],
       divergence: true,
-      score: '78%'
+      p1_idx: 2, valley_idx: 3, p2_idx: 5
     },
     '1h': {
-      labels: ['10:00', '11:00', '12:00 (P1)', '13:00', '14:00', '15:00 (P2)', '16:00', '17:00'],
+      labels: ['10:00', '11:00', '12:00 (P1)', '13:00 (Valle)', '14:00', '15:00 (P2)', '16:00', '17:00'],
       price:  [61000, 62500, 64000, 62800, 63500, 65200, 63000, 61500],
       rsi:    [48,    62,    79,    58,    64,    68,    45,    36],
       macd:   [120,   250,   480,   180,   220,   310,  -50,   -280],
       volume: [1200,  1800,  3100,  1400,  1600,  1900,  2200,  2800],
       divergence: true,
-      score: '88%'
+      p1_idx: 2, valley_idx: 3, p2_idx: 5
     },
     '4h': {
-      labels: ['Ayer 08:00', 'Ayer 12:00', 'Ayer 16:00 (P1)', 'Ayer 20:00', 'Hoy 00:00', 'Hoy 04:00 (P2)', 'Hoy 08:00', 'Hoy 12:00'],
+      labels: ['08:00', '12:00', '16:00 (P1)', '20:00 (Valle)', '00:00', '04:00 (P2)', '08:00', '12:00'],
       price:  [58000, 60500, 63800, 62000, 63100, 66000, 64200, 62100],
       rsi:    [42,    58,    82,    52,    60,    65,    41,    33],
       macd:   [80,    310,   650,   210,   290,   380,  -120,  -450],
       volume: [3200,  4500,  8900,  3800,  4100,  5200,  6100,  7400],
       divergence: true,
-      score: '94%'
+      p1_idx: 2, valley_idx: 3, p2_idx: 5
     },
     '1d': {
       labels: ['20 Sep', '21 Sep', '22 Sep', '23 Sep', '24 Sep', '25 Sep', '26 Sep', '27 Sep'],
@@ -128,8 +173,7 @@
       rsi:    [40,    50,    62,    53,    59,    61,    50,    44],
       macd:   [-100,  50,    200,   120,   180,   190,   10,    -110],
       volume: [15000, 18000, 22000, 16000, 17000, 17500, 19000, 21000],
-      divergence: false,
-      score: '30%'
+      divergence: false
     }
   };
 
@@ -146,45 +190,47 @@
   };
 
   function initCharts() {
-    const ctxPrice  = document.getElementById('priceChart').getContext('2d');
-    const ctxRsi    = document.getElementById('rsiChart').getContext('2d');
-    const ctxMacd   = document.getElementById('macdChart').getContext('2d');
-    const ctxVolume = document.getElementById('volumeChart').getContext('2d');
-
-    priceChart  = new Chart(ctxPrice,  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio BTC (USDT)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
-    rsiChart    = new Chart(ctxRsi,    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
-    macdChart   = new Chart(ctxMacd,   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
-    volumeChart = new Chart(ctxVolume, { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
+    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio BTC (USDT)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
+    rsiChart    = new Chart(document.getElementById('rsiChart').getContext('2d'),    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
+    macdChart   = new Chart(document.getElementById('macdChart').getContext('2d'),   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
+    volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
 
     updateTimeframe('1h');
   }
 
   function updateTimeframe(tf) {
-    // Actualizar estados visuales de los botones
     document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
     event?.target?.classList.add('active') || document.querySelectorAll('.tf-btn')[1].classList.add('active');
 
     const data = datasets[tf];
-    const alertBox = document.getElementById('alertBox');
 
-    // Actualizar Alerta
+    // AUTOMATIZACIÓN DE CÁLCULO DE NIVELES
     if (data.divergence) {
-      alertBox.style.backgroundColor = '#2b1f31';
-      alertBox.style.borderColor = '#ff4d4d';
-      alertBox.style.color = '#ff6b6b';
-      alertBox.innerHTML = `⚠️ SEÑAL DE VENTA DETECTADA EN TF [${tf.toUpperCase()}] (Fuerza de Señal: ${data.score})<br>` +
-        `• El precio marcó un máximo más alto pero RSI, MACD y Volumen perdieron impulso.`;
+      const peak2 = data.price[data.p2_idx];
+      const valley = data.price[data.valley_idx];
+
+      // Algoritmo de decisión
+      const entryPrice = valley - 50;                     // Confirmación tras romper el valle
+      const stopLoss   = peak2 + 300;                      // Un margen por encima del máximo local
+      const risk       = stopLoss - entryPrice;
+      const takeProfit1 = Math.round(entryPrice - risk * 1.5); // Ratio R:B 1:1.5
+      const takeProfit2 = Math.round(entryPrice - risk * 2.5); // Ratio R:B 1:2.5
+
+      document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA ACTIVA [${tf.toUpperCase()}]</span> — Divergencia Confirmada`;
+      document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()} <span style="font-size:0.7rem; color:#ffb74d;">(En rotura)</span>`;
+      document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()}`;
+      document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()}`;
+      document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()}`;
     } else {
-      alertBox.style.backgroundColor = '#1d2736';
-      alertBox.style.borderColor = '#2962ff';
-      alertBox.style.color = '#2962ff';
-      alertBox.innerHTML = `ℹ️ TEMPORALIDAD [${tf.toUpperCase()}]: Sin divergencia confirmada (Mercado dentro de rangos normales).`;
+      document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${tf.toUpperCase()}]</span> — Mercado sin patrón claro`;
+      document.getElementById('valEntry').innerHTML = 'N/A';
+      document.getElementById('valSL').innerHTML    = 'N/A';
+      document.getElementById('valTP1').innerHTML   = 'N/A';
+      document.getElementById('valTP2').innerHTML   = 'N/A';
     }
 
-    // Actualizar datos de los gráficos
-    [priceChart, rsiChart, macdChart, volumeChart].forEach(chart => {
-      chart.data.labels = data.labels;
-    });
+    // Actualizar datos de gráficos
+    [priceChart, rsiChart, macdChart, volumeChart].forEach(chart => chart.data.labels = data.labels);
 
     priceChart.data.datasets[0].data  = data.price;
     rsiChart.data.datasets[0].data    = data.rsi;
