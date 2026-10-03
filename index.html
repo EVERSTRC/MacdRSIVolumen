@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Estrategia BTC - Señales Automáticas</title>
+  <title>Estrategia BTC - Binance Realtime</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -38,17 +38,9 @@
       font-weight: bold;
       transition: all 0.2s;
     }
-    .tf-btn:hover {
-      background: #2b384e;
-      color: #fff;
-    }
-    .tf-btn.active {
-      background: #2962ff;
-      color: #fff;
-      border-color: #2962ff;
-    }
+    .tf-btn:hover { background: #2b384e; color: #fff; }
+    .tf-btn.active { background: #2962ff; color: #fff; border-color: #2962ff; }
     
-    /* Panel de Orden Automática */
     .trade-panel {
       background: #192233;
       border: 1px solid #2a3852;
@@ -89,28 +81,24 @@
       padding: 15px;
       margin-bottom: 15px;
     }
-    canvas {
-      width: 100% !important;
-      max-height: 180px;
-    }
+    canvas { width: 100% !important; max-height: 180px; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="top-bar">
-    <h2 style="margin: 0; color: #4da6ff;">🤖 Bot Autónomo BTC: Divergencias & Niveles</h2>
+    <h2 style="margin: 0; color: #4da6ff;">⚡ BTC/USDT Live: Binance API Engine</h2>
     <div class="timeframe-selector">
-      <button class="tf-btn" onclick="updateTimeframe('15m')">15m</button>
-      <button class="tf-btn active" onclick="updateTimeframe('1h')">1H</button>
-      <button class="tf-btn" onclick="updateTimeframe('4h')">4H</button>
-      <button class="tf-btn" onclick="updateTimeframe('1d')">1D</button>
+      <button class="tf-btn" onclick="setTF('15m')">15m</button>
+      <button class="tf-btn active" onclick="setTF('1h')">1H</button>
+      <button class="tf-btn" onclick="setTF('4h')">4H</button>
+      <button class="tf-btn" onclick="setTF('1d')">1D</button>
     </div>
   </div>
 
-  <!-- Panel de Orden Automático -->
   <div class="trade-panel">
-    <div id="signalHeader" class="signal-header">Calculando parámetros...</div>
+    <div id="signalHeader" class="signal-header">Conectando con Binance...</div>
     <div class="signal-grid">
       <div class="card entry">
         <div class="label">🎯 Entrada (Short)</div>
@@ -138,45 +126,7 @@
 </div>
 
 <script>
-  // Banco de Datos por Temporalidad
-  const datasets = {
-    '15m': {
-      labels: ['14:00', '14:15', '14:30 (P1)', '14:45 (Valle)', '15:00', '15:15 (P2)', '15:30', '15:45'],
-      price:  [63100, 63400, 63900, 63300, 63700, 64100, 63600, 63200],
-      rsi:    [52,    65,    74,    55,    62,    66,    48,    40],
-      macd:   [40,    110,   210,   80,    130,   150,   -20,   -90],
-      volume: [450,   600,   1200,  480,   550,   750,   800,   950],
-      divergence: true,
-      p1_idx: 2, valley_idx: 3, p2_idx: 5
-    },
-    '1h': {
-      labels: ['10:00', '11:00', '12:00 (P1)', '13:00 (Valle)', '14:00', '15:00 (P2)', '16:00', '17:00'],
-      price:  [61000, 62500, 64000, 62800, 63500, 65200, 63000, 61500],
-      rsi:    [48,    62,    79,    58,    64,    68,    45,    36],
-      macd:   [120,   250,   480,   180,   220,   310,  -50,   -280],
-      volume: [1200,  1800,  3100,  1400,  1600,  1900,  2200,  2800],
-      divergence: true,
-      p1_idx: 2, valley_idx: 3, p2_idx: 5
-    },
-    '4h': {
-      labels: ['08:00', '12:00', '16:00 (P1)', '20:00 (Valle)', '00:00', '04:00 (P2)', '08:00', '12:00'],
-      price:  [58000, 60500, 63800, 62000, 63100, 66000, 64200, 62100],
-      rsi:    [42,    58,    82,    52,    60,    65,    41,    33],
-      macd:   [80,    310,   650,   210,   290,   380,  -120,  -450],
-      volume: [3200,  4500,  8900,  3800,  4100,  5200,  6100,  7400],
-      divergence: true,
-      p1_idx: 2, valley_idx: 3, p2_idx: 5
-    },
-    '1d': {
-      labels: ['20 Sep', '21 Sep', '22 Sep', '23 Sep', '24 Sep', '25 Sep', '26 Sep', '27 Sep'],
-      price:  [55000, 58000, 61000, 59500, 62000, 63000, 62800, 61200],
-      rsi:    [40,    50,    62,    53,    59,    61,    50,    44],
-      macd:   [-100,  50,    200,   120,   180,   190,   10,    -110],
-      volume: [15000, 18000, 22000, 16000, 17000, 17500, 19000, 21000],
-      divergence: false
-    }
-  };
-
+  let currentTF = '1h';
   let priceChart, rsiChart, macdChart, volumeChart;
 
   const chartOpts = {
@@ -189,54 +139,143 @@
     }
   };
 
-  function initCharts() {
-    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio BTC (USDT)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
-    rsiChart    = new Chart(document.getElementById('rsiChart').getContext('2d'),    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
-    macdChart   = new Chart(document.getElementById('macdChart').getContext('2d'),   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
-    volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
+  // 1. Funciones Matemáticas para los Indicadores Técnicos
+  function calculateRSI(prices, period = 14) {
+    let rsi = new Array(prices.length).fill(null);
+    let gains = 0, losses = 0;
 
-    updateTimeframe('1h');
-  }
-
-  function updateTimeframe(tf) {
-    document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
-    event?.target?.classList.add('active') || document.querySelectorAll('.tf-btn')[1].classList.add('active');
-
-    const data = datasets[tf];
-
-    // AUTOMATIZACIÓN DE CÁLCULO DE NIVELES
-    if (data.divergence) {
-      const peak2 = data.price[data.p2_idx];
-      const valley = data.price[data.valley_idx];
-
-      // Algoritmo de decisión
-      const entryPrice = valley - 50;                     // Confirmación tras romper el valle
-      const stopLoss   = peak2 + 300;                      // Un margen por encima del máximo local
-      const risk       = stopLoss - entryPrice;
-      const takeProfit1 = Math.round(entryPrice - risk * 1.5); // Ratio R:B 1:1.5
-      const takeProfit2 = Math.round(entryPrice - risk * 2.5); // Ratio R:B 1:2.5
-
-      document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA ACTIVA [${tf.toUpperCase()}]</span> — Divergencia Confirmada`;
-      document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()} <span style="font-size:0.7rem; color:#ffb74d;">(En rotura)</span>`;
-      document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()}`;
-      document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()}`;
-      document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()}`;
-    } else {
-      document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${tf.toUpperCase()}]</span> — Mercado sin patrón claro`;
-      document.getElementById('valEntry').innerHTML = 'N/A';
-      document.getElementById('valSL').innerHTML    = 'N/A';
-      document.getElementById('valTP1').innerHTML   = 'N/A';
-      document.getElementById('valTP2').innerHTML   = 'N/A';
+    for (let i = 1; i <= period; i++) {
+      let diff = prices[i] - prices[i - 1];
+      if (diff >= 0) gains += diff; else losses -= diff;
     }
 
-    // Actualizar datos de gráficos
-    [priceChart, rsiChart, macdChart, volumeChart].forEach(chart => chart.data.labels = data.labels);
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+    rsi[period] = 100 - (100 / (1 + (avgGain / avgLoss)));
 
-    priceChart.data.datasets[0].data  = data.price;
-    rsiChart.data.datasets[0].data    = data.rsi;
-    macdChart.data.datasets[0].data   = data.macd;
-    macdChart.data.datasets[0].backgroundColor = data.macd.map(v => v >= 0 ? '#29b6f6' : '#ef5350');
-    volumeChart.data.datasets[0].data = data.volume;
+    for (let i = period + 1; i < prices.length; i++) {
+      let diff = prices[i] - prices[i - 1];
+      let gain = diff >= 0 ? diff : 0;
+      let loss = diff < 0 ? -diff : 0;
+
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + loss) / period;
+
+      rsi[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
+    }
+    return rsi;
+  }
+
+  function calculateEMA(prices, period) {
+    let k = 2 / (period + 1);
+    let ema = [prices[0]];
+    for (let i = 1; i < prices.length; i++) {
+      ema.push(prices[i] * k + ema[i - 1] * (1 - k));
+    }
+    return ema;
+  }
+
+  function calculateMACD(prices) {
+    let ema12 = calculateEMA(prices, 12);
+    let ema26 = calculateEMA(prices, 26);
+    let macdLine = ema12.map((val, idx) => val - ema26[idx]);
+    let signalLine = calculateEMA(macdLine, 9);
+    return macdLine.map((val, idx) => val - signalLine[idx]); // Histograma
+  }
+
+  // 2. Obtener Datos Reales de Binance
+  async function fetchBinanceData(interval) {
+    document.getElementById('signalHeader').innerHTML = '⏳ Descargando datos en tiempo real de Binance...';
+    try {
+      const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=50`);
+      const rawData = await response.json();
+
+      const labels = rawData.map(d => {
+        let date = new Date(d[0]);
+        return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+      });
+      const prices = rawData.map(d => parseFloat(d[4])); // Cierre
+      const highs  = rawData.map(d => parseFloat(d[2])); // Máximo
+      const lows   = rawData.map(d => parseFloat(d[3])); // Mínimo
+      const volumes= rawData.map(d => parseFloat(d[5])); // Volumen
+
+      const rsi  = calculateRSI(prices);
+      const macd = calculateMACD(prices);
+
+      analyzeDivergence(labels, prices, highs, lows, rsi, macd, volumes);
+    } catch (err) {
+      document.getElementById('signalHeader').innerHTML = '❌ Error al conectar con Binance API';
+      console.error(err);
+    }
+  }
+
+  // 3. Algoritmo de Análisis de Divergencias en Tiempo Real
+  function analyzeDivergence(labels, prices, highs, lows, rsi, macd, volumes) {
+    const n = prices.length - 1;
+    let p2 = n - 1, p1 = null, valley = null;
+
+    // Buscar máximos locales en el RSI/Precio de los últimos 20 periodos
+    for (let i = n - 2; i > n - 25; i--) {
+      if (highs[i] > highs[i-1] && highs[i] > highs[i+1]) {
+        if (!p1 && highs[i] < highs[p2]) {
+          p1 = i;
+          break;
+        }
+      }
+    }
+
+    if (p1) {
+      // Buscar el punto mínimo entre p1 y p2
+      let minLow = Infinity;
+      for (let i = p1; i <= p2; i++) {
+        if (lows[i] < minLow) {
+          minLow = lows[i];
+          valley = i;
+        }
+      }
+
+      const divPrice  = highs[p2] > highs[p1];
+      const divRSI    = rsi[p2] < rsi[p1];
+      const divVolume = volumes[p2] < volumes[p1];
+
+      if (divPrice && divRSI) {
+        const entryPrice  = Math.round(lows[valley] - 20);
+        const stopLoss    = Math.round(highs[p2] + (highs[p2] * 0.005));
+        const risk        = stopLoss - entryPrice;
+        const takeProfit1 = Math.round(entryPrice - (risk * 1.5));
+        const takeProfit2 = Math.round(entryPrice - (risk * 2.5));
+
+        document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA ACTIVA [${currentTF.toUpperCase()}]</span> — Divergencia Detectada`;
+        document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()}`;
+        document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()}`;
+        document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()}`;
+        document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()}`;
+      } else {
+        setNoSignal();
+      }
+    } else {
+      setNoSignal();
+    }
+
+    updateCharts(labels, prices, rsi, macd, volumes);
+  }
+
+  function setNoSignal() {
+    document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${currentTF.toUpperCase()}]</span> — Mercado Sin Divergencia Confirmada`;
+    document.getElementById('valEntry').innerHTML = 'N/A';
+    document.getElementById('valSL').innerHTML    = 'N/A';
+    document.getElementById('valTP1').innerHTML   = 'N/A';
+    document.getElementById('valTP2').innerHTML   = 'N/A';
+  }
+
+  function updateCharts(labels, prices, rsi, macd, volumes) {
+    [priceChart, rsiChart, macdChart, volumeChart].forEach(c => c.data.labels = labels);
+    
+    priceChart.data.datasets[0].data  = prices;
+    rsiChart.data.datasets[0].data    = rsi;
+    macdChart.data.datasets[0].data   = macd;
+    macdChart.data.datasets[0].backgroundColor = macd.map(v => v >= 0 ? '#29b6f6' : '#ef5350');
+    volumeChart.data.datasets[0].data = volumes;
 
     priceChart.update();
     rsiChart.update();
@@ -244,7 +283,21 @@
     volumeChart.update();
   }
 
-  window.onload = initCharts;
+  function setTF(tf) {
+    currentTF = tf;
+    document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
+    event?.target?.classList.add('active');
+    fetchBinanceData(tf);
+  }
+
+  window.onload = () => {
+    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio Real BTC/USDT (Binance)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
+    rsiChart    = new Chart(document.getElementById('rsiChart').getContext('2d'),    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
+    macdChart   = new Chart(document.getElementById('macdChart').getContext('2d'),   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
+    volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC (Binance)', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
+
+    fetchBinanceData('1h');
+  };
 </script>
 
 </body>
