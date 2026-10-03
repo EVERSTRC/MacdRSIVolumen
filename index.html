@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Estrategia BTC - Binance Realtime</title>
+  <title>Estrategia BTCUSD - Binance Realtime</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -88,7 +88,7 @@
 
 <div class="container">
   <div class="top-bar">
-    <h2 style="margin: 0; color: #4da6ff;">⚡ BTC/USDT Live: Binance API Engine</h2>
+    <h2 style="margin: 0; color: #4da6ff;">⚡ BTC/USD Live: Binance API Engine</h2>
     <div class="timeframe-selector">
       <button class="tf-btn" onclick="setTF('15m')">15m</button>
       <button class="tf-btn active" onclick="setTF('1h')">1H</button>
@@ -139,7 +139,7 @@
     }
   };
 
-  // 1. Funciones Matemáticas para los Indicadores Técnicos
+  // Cálculo de RSI (14)
   function calculateRSI(prices, period = 14) {
     let rsi = new Array(prices.length).fill(null);
     let gains = 0, losses = 0;
@@ -166,6 +166,7 @@
     return rsi;
   }
 
+  // Cálculo de EMA
   function calculateEMA(prices, period) {
     let k = 2 / (period + 1);
     let ema = [prices[0]];
@@ -175,18 +176,20 @@
     return ema;
   }
 
+  // Cálculo de MACD (12, 26, 9)
   function calculateMACD(prices) {
     let ema12 = calculateEMA(prices, 12);
     let ema26 = calculateEMA(prices, 26);
     let macdLine = ema12.map((val, idx) => val - ema26[idx]);
     let signalLine = calculateEMA(macdLine, 9);
-    return macdLine.map((val, idx) => val - signalLine[idx]); // Histograma
+    return macdLine.map((val, idx) => val - signalLine[idx]);
   }
 
-  // 2. Obtener Datos Reales de Binance
+  // Obtención de datos reales de BTCUSD / BTCUSDT desde Binance
   async function fetchBinanceData(interval) {
-    document.getElementById('signalHeader').innerHTML = '⏳ Descargando datos en tiempo real de Binance...';
+    document.getElementById('signalHeader').innerHTML = '⏳ Obteniendo datos de BTC/USD desde Binance...';
     try {
+      // Usamos el par primario de Binance Spot
       const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=50`);
       const rawData = await response.json();
 
@@ -194,10 +197,10 @@
         let date = new Date(d[0]);
         return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
       });
-      const prices = rawData.map(d => parseFloat(d[4])); // Cierre
-      const highs  = rawData.map(d => parseFloat(d[2])); // Máximo
-      const lows   = rawData.map(d => parseFloat(d[3])); // Mínimo
-      const volumes= rawData.map(d => parseFloat(d[5])); // Volumen
+      const prices = rawData.map(d => parseFloat(d[4]));
+      const highs  = rawData.map(d => parseFloat(d[2]));
+      const lows   = rawData.map(d => parseFloat(d[3]));
+      const volumes= rawData.map(d => parseFloat(d[5]));
 
       const rsi  = calculateRSI(prices);
       const macd = calculateMACD(prices);
@@ -209,12 +212,11 @@
     }
   }
 
-  // 3. Algoritmo de Análisis de Divergencias en Tiempo Real
+  // Algoritmo de detección automática
   function analyzeDivergence(labels, prices, highs, lows, rsi, macd, volumes) {
     const n = prices.length - 1;
     let p2 = n - 1, p1 = null, valley = null;
 
-    // Buscar máximos locales en el RSI/Precio de los últimos 20 periodos
     for (let i = n - 2; i > n - 25; i--) {
       if (highs[i] > highs[i-1] && highs[i] > highs[i+1]) {
         if (!p1 && highs[i] < highs[p2]) {
@@ -225,7 +227,6 @@
     }
 
     if (p1) {
-      // Buscar el punto mínimo entre p1 y p2
       let minLow = Infinity;
       for (let i = p1; i <= p2; i++) {
         if (lows[i] < minLow) {
@@ -245,11 +246,11 @@
         const takeProfit1 = Math.round(entryPrice - (risk * 1.5));
         const takeProfit2 = Math.round(entryPrice - (risk * 2.5));
 
-        document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA ACTIVA [${currentTF.toUpperCase()}]</span> — Divergencia Detectada`;
-        document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()}`;
-        document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()}`;
-        document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()}`;
-        document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()}`;
+        document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA DETECTADA EN BTC/USD [${currentTF.toUpperCase()}]</span>`;
+        document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()} USD`;
+        document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()} USD`;
+        document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()} USD`;
+        document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()} USD`;
       } else {
         setNoSignal();
       }
@@ -261,7 +262,7 @@
   }
 
   function setNoSignal() {
-    document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${currentTF.toUpperCase()}]</span> — Mercado Sin Divergencia Confirmada`;
+    document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${currentTF.toUpperCase()}]</span> — Sin Divergencia Confirmada en BTC/USD`;
     document.getElementById('valEntry').innerHTML = 'N/A';
     document.getElementById('valSL').innerHTML    = 'N/A';
     document.getElementById('valTP1').innerHTML   = 'N/A';
@@ -291,10 +292,10 @@
   }
 
   window.onload = () => {
-    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio Real BTC/USDT (Binance)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
+    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio BTC/USD (Binance)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
     rsiChart    = new Chart(document.getElementById('rsiChart').getContext('2d'),    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
     macdChart   = new Chart(document.getElementById('macdChart').getContext('2d'),   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
-    volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC (Binance)', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
+    volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
 
     fetchBinanceData('1h');
   };
