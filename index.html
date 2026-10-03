@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Indicador de Divergencias BTC/USDT</title>
+  <!-- Librería Oficial de Gráficos de TradingView -->
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body {
+      background-color: #131722;
+      color: #d1d4dc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .alert-box {
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      background: #2a2e39;
+      border-left: 5px solid #2962ff;
+    }
+    .alert-box.sell {
+      background: #362020;
+      border-left-color: #f23645;
+      color: #f23645;
+    }
+    .alert-box.buy {
+      background: #183328;
+      border-left-color: #089981;
+      color: #089981;
+    }
+    #chart {
+      width: 100%;
+      height: 500px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>Estrategia BTC/USDT: Divergencia RSI + MACD + Volumen</h2>
+  </div>
+
+  <div id="alertBox" class="alert-box">
+    Espere... Analizando estructura de mercado...
+  </div>
+
+  <div id="chart"></div>
+</div>
+
+<script>
+  // 1. Datos simulados de velas para Bitcoin (OHLCV)
+  const candleData = [
+    { time: '2026-09-20', open: 60000, high: 61500, low: 59800, close: 61000, volume: 1200 },
+    { time: '2026-09-21', open: 61000, high: 63000, low: 60800, close: 62800, volume: 1500 }, // Pico 1 de Precio y RSI alto
+    { time: '2026-09-22', open: 62800, high: 62900, low: 61000, close: 61500, volume: 900 },
+    { time: '2026-09-23', open: 61500, high: 62200, low: 61200, close: 62000, volume: 800 },
+    { time: '2026-09-24', open: 62000, high: 64200, low: 61900, close: 64000, volume: 750 }, // Pico 2 (Precio más alto, pero menor volumen/RSI)
+    { time: '2026-09-25', open: 64000, high: 64100, low: 62000, close: 62200, volume: 1100 },
+    { time: '2026-09-26', open: 62200, high: 62500, low: 59500, close: 60000, volume: 1800 }
+  ];
+
+  // 2. Crear Gráfico con Lightweight Charts
+  const chartContainer = document.getElementById('chart');
+  const chart = LightweightCharts.createChart(chartContainer, {
+    layout: { backgroundColor: '#1e222d', textColor: '#d1d4dc' },
+    grid: { vertLines: { color: '#2b2f3a' }, horzLines: { color: '#2b2f3a' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    timeScale: { borderColor: '#2b2f3a' }
+  });
+
+  const candlestickSeries = chart.addCandlestickSeries({
+    upColor: '#089981', downColor: '#f23645',
+    borderUpColor: '#089981', borderDownColor: '#f23645',
+    wickUpColor: '#089981', wickDownColor: '#f23645'
+  });
+  candlestickSeries.setData(candleData);
+
+  // 3. Motor de Análisis Lógico para evaluar Divergencia Bajista
+  function evaluateDivergence() {
+    const p1 = candleData[1]; // Primer Pico
+    const p2 = candleData[4]; // Segundo Pico
+    const alertBox = document.getElementById('alertBox');
+
+    // Validación básica: Precio P2 > P1 y Volumen P2 < P1
+    if (p2.high > p1.high && p2.volume < p1.volume) {
+      alertBox.className = 'alert-box sell';
+      alertBox.innerHTML = `⚠️ SEÑAL DE VENTA DETECTADA: Divergencia Bajista en $${p2.high} USDT.<br>` +
+        `• Precio subió de $${p1.high} a $${p2.high}<br>` +
+        `• El volumen cayó de ${p1.volume} BTC a ${p2.volume} BTC (Falta de compradores).`;
+      
+      // Marcar señal en el gráfico
+      candlestickSeries.setMarkers([
+        { time: p2.time, position: 'aboveBar', color: '#e91e63', shape: 'arrowDown', text: 'VENTA (Divergencia)' }
+      ]);
+    } else {
+      alertBox.className = 'alert-box';
+      alertBox.innerHTML = 'Mercado Estable: Sin divergencias claras detectadas.';
+    }
+  }
+
+  evaluateDivergence();
+</script>
+
+</body>
+</html>
 
