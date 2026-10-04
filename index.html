@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Estrategia BTCUSD - Alarma Multitemporal</title>
+  <title>Estrategia BTCUSD - Realtime WebSockets</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -42,7 +42,6 @@
     .tf-btn:hover { background: #2b384e; color: #fff; }
     .tf-btn.active { background: #2962ff; color: #fff; border-color: #2962ff; }
     
-    /* Botón de Sonido / Alarma */
     .sound-btn {
       background: #00e676;
       color: #121826;
@@ -91,11 +90,21 @@
     .card .label { font-size: 0.8rem; color: #9ba3af; font-weight: bold; text-transform: uppercase; }
     .card .value { font-size: 1.2rem; font-weight: bold; margin-top: 4px; color: #fff; }
 
-    .scanner-status {
+    .connection-status {
       font-size: 0.85rem;
       color: #9ba3af;
-      margin-top: 8px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #ffb74d;
+    }
+    .status-dot.online { background-color: #00e676; }
 
     .chart-box {
       background: #1e2738;
@@ -110,7 +119,7 @@
 
 <div class="container">
   <div class="top-bar">
-    <h2 style="margin: 0; color: #4da6ff;">⚡ BTC/USD Live + Alarma Multi-TF</h2>
+    <h2 style="margin: 0; color: #4da6ff;">⚡ BTC/USD Stream: Binance WebSocket Engine</h2>
     <div style="display: flex; gap: 10px; align-items: center;">
       <button id="soundToggle" class="sound-btn" onclick="toggleSound()">🔔 Alarma Activada</button>
       <div class="timeframe-selector">
@@ -125,7 +134,7 @@
   </div>
 
   <div class="trade-panel">
-    <div id="signalHeader" class="signal-header">Conectando con Binance...</div>
+    <div id="signalHeader" class="signal-header">Conectando al WebSocket de Binance...</div>
     <div class="signal-grid">
       <div class="card entry">
         <div class="label">🎯 Entrada (Short)</div>
@@ -144,7 +153,10 @@
         <div id="valTP2" class="value">-</div>
       </div>
     </div>
-    <div id="scannerStatus" class="scanner-status">Escáner global: Monitoreando todas las temporalidades cada 15s...</div>
+    <div class="connection-status">
+      <div id="statusDot" class="status-dot"></div>
+      <span id="statusText">Estableciendo flujo de datos directo...</span>
+    </div>
   </div>
 
   <div class="chart-box"><canvas id="priceChart"></canvas></div>
@@ -157,14 +169,15 @@
   let currentTF = '1h';
   let soundEnabled = true;
   let audioCtx = null;
+  let ws = null;
+  let currentKlines = [];
   let lastAlertKey = '';
   let priceChart, rsiChart, macdChart, volumeChart;
-
-  const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d'];
 
   const chartOpts = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false, // Desactivado para actualización instantánea sin demoras
     plugins: { legend: { labels: { color: '#e0e6ed' } } },
     scales: {
       x: { ticks: { color: '#9ba3af' }, grid: { color: '#2e3a50' } },
@@ -172,30 +185,28 @@
     }
   };
 
-  // Reproductor de Alarma Sonora (Web Audio API)
   function playAlarmSound() {
     if (!soundEnabled) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      
       const now = audioCtx.currentTime;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
 
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, now); // Nota A5
-      osc.frequency.exponentialRampToValueAtTime(440, now + 0.5); // Desciende a A4
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
 
       gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
 
       osc.connect(gain);
       gain.connect(audioCtx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.5);
+      osc.stop(now + 0.4);
     } catch (e) {
-      console.warn("Error con Web Audio API:", e);
+      console.warn("Audio Context blocked:", e);
     }
   }
 
@@ -205,14 +216,14 @@
     if (soundEnabled) {
       btn.className = 'sound-btn';
       btn.innerText = '🔔 Alarma Activada';
-      playAlarmSound(); // Prueba de sonido rápida
+      playAlarmSound();
     } else {
       btn.className = 'sound-btn muted';
       btn.innerText = '🔕 Alarma Silenciada';
     }
   }
 
-  // Cálculos de Indicadores
+  // Indicadores Matemáticos
   function calculateRSI(prices, period = 14) {
     let rsi = new Array(prices.length).fill(null);
     let gains = 0, losses = 0;
@@ -256,71 +267,100 @@
     return macdLine.map((val, idx) => val - signalLine[idx]);
   }
 
-  // Peticiones Binance
-  async function fetchBinanceData(interval) {
+  // 1. Obtener datos iniciales mediante REST para rellenar historial
+  async function loadInitialData(interval) {
     try {
       const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=50`);
       const rawData = await response.json();
+      
+      currentKlines = rawData.map(d => ({
+        time: d[0],
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+        volume: parseFloat(d[5])
+      }));
 
-      const labels = rawData.map(d => {
-        let date = new Date(d[0]);
-        let hrs = date.getHours().toString().padStart(2, '0');
-        let mins = date.getMinutes().toString().padStart(2, '0');
-        return `${hrs}:${mins}`;
-      });
-      const prices = rawData.map(d => parseFloat(d[4]));
-      const highs  = rawData.map(d => parseFloat(d[2]));
-      const lows   = rawData.map(d => parseFloat(d[3]));
-      const volumes= rawData.map(d => parseFloat(d[5]));
-
-      const rsi  = calculateRSI(prices);
-      const macd = calculateMACD(prices);
-
-      return { interval, labels, prices, highs, lows, rsi, macd, volumes };
+      connectWebSocket(interval);
     } catch (err) {
-      console.error("Error Binance API:", err);
-      return null;
+      console.error("Error al cargar historial inicial:", err);
     }
   }
 
-  // Escáner Global Multitemporal
-  async function scanAllTimeframes() {
-    let detectedSignals = [];
-
-    for (let tf of timeframes) {
-      const data = await fetchBinanceData(tf);
-      if (!data) continue;
-
-      const result = checkDivergence(data.highs, data.lows, data.rsi, data.volumes);
-      if (result.hasDivergence) {
-        detectedSignals.push({ tf, ...result });
-
-        // Activar alarma sonora si es una señal nueva
-        const alertKey = `${tf}_${data.highs[result.p2]}`;
-        if (alertKey !== lastAlertKey) {
-          lastAlertKey = alertKey;
-          playAlarmSound();
-        }
-      }
-
-      // Si es la temporalidad seleccionada, actualizar gráficos
-      if (tf === currentTF) {
-        updateUI(data, result);
-      }
+  // 2. Transmisión WebSocket en Tiempo Real
+  function connectWebSocket(interval) {
+    if (ws) {
+      ws.close();
     }
 
-    const scannerDiv = document.getElementById('scannerStatus');
-    if (detectedSignals.length > 0) {
-      const tfList = detectedSignals.map(s => s.tf.toUpperCase()).join(', ');
-      scannerDiv.innerHTML = `🔥 <b style="color:#ff4d4d;">ALERTA GLOBAL:</b> Divergencia activa detectada en [${tfList}]`;
-    } else {
-      scannerDiv.innerHTML = `🟢 Escáner global activo: Sin divergencias en otros marcos temporales.`;
-    }
+    const streamName = `btcusdt@kline_${interval}`;
+    ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streamName}`);
+
+    ws.onopen = () => {
+      document.getElementById('statusDot').className = 'status-dot online';
+      document.getElementById('statusText').innerText = `WebSocket Activo: Transmitiendo BTC/USD en [${interval.toUpperCase()}] a tiempo real`;
+    };
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const k = message.k;
+
+      const candle = {
+        time: k.t,
+        open: parseFloat(k.o),
+        high: parseFloat(k.h),
+        low: parseFloat(k.l),
+        close: parseFloat(k.c),
+        volume: parseFloat(k.v)
+      };
+
+      // Si la vela recibida corresponde a la última conocida, la actualizamos; si no, agregamos la nueva
+      const lastIndex = currentKlines.length - 1;
+      if (currentKlines[lastIndex] && currentKlines[lastIndex].time === candle.time) {
+        currentKlines[lastIndex] = candle;
+      } else {
+        currentKlines.push(candle);
+        currentKlines.shift(); // Mantenemos el límite de 50 velas
+      }
+
+      processRealtimeData();
+    };
+
+    ws.onerror = (err) => {
+      document.getElementById('statusDot').className = 'status-dot';
+      document.getElementById('statusText').innerText = 'Error en WebSocket. Reintentando...';
+    };
+
+    ws.onclose = () => {
+      document.getElementById('statusDot').className = 'status-dot';
+    };
   }
 
-  // Detección Lógica
-  function checkDivergence(highs, lows, rsi, volumes) {
-    const n = highs.length - 1;
+  // 3. Procesar datos en tiempo real
+  function processRealtimeData() {
+    const labels = currentKlines.map(d => {
+      let date = new Date(d.time);
+      let hrs = date.getHours().toString().padStart(2, '0');
+      let mins = date.getMinutes().toString().padStart(2, '0');
+      let secs = date.getSeconds().toString().padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    });
+
+    const prices  = currentKlines.map(d => d.close);
+    const highs   = currentKlines.map(d => d.high);
+    const lows    = currentKlines.map(d => d.low);
+    const volumes = currentKlines.map(d => d.volume);
+
+    const rsi  = calculateRSI(prices);
+    const macd = calculateMACD(prices);
+
+    analyzeDivergence(labels, prices, highs, lows, rsi, macd, volumes);
+  }
+
+  // 4. Algoritmo de divergencias con trigger de alarma inmediata
+  function analyzeDivergence(labels, prices, highs, lows, rsi, macd, volumes) {
+    const n = prices.length - 1;
     let p2 = n - 1, p1 = null, valley = null;
 
     for (let i = n - 2; i > n - 25; i--) {
@@ -343,47 +383,55 @@
 
       const divPrice  = highs[p2] > highs[p1];
       const divRSI    = rsi[p2] < rsi[p1];
-      const divVolume = volumes[p2] < volumes[p1];
 
       if (divPrice && divRSI) {
-        return { hasDivergence: true, p1, p2, valley };
+        const offset = (currentTF === '1m' || currentTF === '5m') ? 5 : 20;
+        const slPct  = (currentTF === '1m' || currentTF === '5m') ? 0.002 : 0.005;
+
+        const entryPrice  = Math.round(lows[valley] - offset);
+        const stopLoss    = Math.round(highs[p2] + (highs[p2] * slPct));
+        const risk        = stopLoss - entryPrice;
+        const takeProfit1 = Math.round(entryPrice - (risk * 1.5));
+        const takeProfit2 = Math.round(entryPrice - (risk * 2.5));
+
+        document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL EN TIEMPO REAL [${currentTF.toUpperCase()}]</span> — Divergencia Detectada`;
+        document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()} USD`;
+        document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()} USD`;
+        document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()} USD`;
+        document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()} USD`;
+
+        // Disparador de Alarma por WebSocket
+        const alertKey = `${currentTF}_${highs[p2]}`;
+        if (alertKey !== lastAlertKey) {
+          lastAlertKey = alertKey;
+          playAlarmSound();
+        }
+      } else {
+        setNoSignal();
       }
+    } else {
+      setNoSignal();
     }
-    return { hasDivergence: false };
+
+    updateCharts(labels, prices, rsi, macd, volumes);
   }
 
-  // Actualizar Interfaz
-  function updateUI(data, divResult) {
-    if (divResult.hasDivergence) {
-      const offset = (currentTF === '1m' || currentTF === '5m') ? 5 : 20;
-      const slPct  = (currentTF === '1m' || currentTF === '5m') ? 0.002 : 0.005;
+  function setNoSignal() {
+    document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ EN VIVO [${currentTF.toUpperCase()}]</span> — Sin Divergencia Confirmada`;
+    document.getElementById('valEntry').innerHTML = 'N/A';
+    document.getElementById('valSL').innerHTML    = 'N/A';
+    document.getElementById('valTP1').innerHTML   = 'N/A';
+    document.getElementById('valTP2').innerHTML   = 'N/A';
+  }
 
-      const entryPrice  = Math.round(data.lows[divResult.valley] - offset);
-      const stopLoss    = Math.round(data.highs[divResult.p2] + (data.highs[divResult.p2] * slPct));
-      const risk        = stopLoss - entryPrice;
-      const takeProfit1 = Math.round(entryPrice - (risk * 1.5));
-      const takeProfit2 = Math.round(entryPrice - (risk * 2.5));
-
-      document.getElementById('signalHeader').innerHTML = `<span style="color:#ff4d4d;">🔴 SEÑAL DE VENTA [${currentTF.toUpperCase()}]</span>`;
-      document.getElementById('valEntry').innerHTML = `$${entryPrice.toLocaleString()} USD`;
-      document.getElementById('valSL').innerHTML    = `$${stopLoss.toLocaleString()} USD`;
-      document.getElementById('valTP1').innerHTML   = `$${takeProfit1.toLocaleString()} USD`;
-      document.getElementById('valTP2').innerHTML   = `$${takeProfit2.toLocaleString()} USD`;
-    } else {
-      document.getElementById('signalHeader').innerHTML = `<span style="color:#2962ff;">⚪ ESPERAR [${currentTF.toUpperCase()}]</span> — Sin Divergencia`;
-      document.getElementById('valEntry').innerHTML = 'N/A';
-      document.getElementById('valSL').innerHTML    = 'N/A';
-      document.getElementById('valTP1').innerHTML   = 'N/A';
-      document.getElementById('valTP2').innerHTML   = 'N/A';
-    }
-
-    // Actualizar Gráficos
-    [priceChart, rsiChart, macdChart, volumeChart].forEach(c => c.data.labels = data.labels);
-    priceChart.data.datasets[0].data  = data.prices;
-    rsiChart.data.datasets[0].data    = data.rsi;
-    macdChart.data.datasets[0].data   = data.macd;
-    macdChart.data.datasets[0].backgroundColor = data.macd.map(v => v >= 0 ? '#29b6f6' : '#ef5350');
-    volumeChart.data.datasets[0].data = data.volumes;
+  function updateCharts(labels, prices, rsi, macd, volumes) {
+    [priceChart, rsiChart, macdChart, volumeChart].forEach(c => c.data.labels = labels);
+    
+    priceChart.data.datasets[0].data  = prices;
+    rsiChart.data.datasets[0].data    = rsi;
+    macdChart.data.datasets[0].data   = macd;
+    macdChart.data.datasets[0].backgroundColor = macd.map(v => v >= 0 ? '#29b6f6' : '#ef5350');
+    volumeChart.data.datasets[0].data = volumes;
 
     priceChart.update();
     rsiChart.update();
@@ -395,18 +443,16 @@
     currentTF = tf;
     document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
     event?.target?.classList.add('active');
-    scanAllTimeframes();
+    loadInitialData(tf);
   }
 
   window.onload = () => {
-    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'Precio BTC/USD (Binance)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
+    priceChart  = new Chart(document.getElementById('priceChart').getContext('2d'),  { type: 'line', data: { labels: [], datasets: [{ label: 'BTC/USD Vivo (Binance WS)', data: [], borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.1)', fill: true }] }, options: chartOpts });
     rsiChart    = new Chart(document.getElementById('rsiChart').getContext('2d'),    { type: 'line', data: { labels: [], datasets: [{ label: 'RSI (14)', data: [], borderColor: '#ff9100' }] }, options: chartOpts });
     macdChart   = new Chart(document.getElementById('macdChart').getContext('2d'),   { type: 'bar',  data: { labels: [], datasets: [{ label: 'Histograma MACD', data: [], backgroundColor: [] }] }, options: chartOpts });
     volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), { type: 'bar',  data: { labels: [], datasets: [{ label: 'Volumen BTC', data: [], backgroundColor: '#ab47bc' }] }, options: chartOpts });
 
-    // Primera ejecución y programar escáner en segundo plano cada 15s
-    scanAllTimeframes();
-    setInterval(scanAllTimeframes, 15000);
+    loadInitialData('1h');
   };
 </script>
 
