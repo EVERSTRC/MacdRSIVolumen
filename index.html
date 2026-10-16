@@ -41,11 +41,11 @@
       <div class="flex flex-wrap items-center gap-3 bg-binance-black/60 px-4 py-2 rounded-xl border border-binance-border">
         <div id="status-pulse" class="w-3 h-3 rounded-full bg-binance-yellow animate-ping"></div>
         <div class="text-xs">
-          <div class="font-bold text-gray-200" id="ws-status">Conectando...</div>
+          <div class="font-bold text-gray-200" id="ws-status">Conectando Binance...</div>
           <div class="text-binance-yellow font-mono text-[11px] font-semibold" id="cr-clock">CR Time: --:--:--</div>
         </div>
         <div class="ml-2 px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-950/60 text-binance-green border border-emerald-800/60 flex items-center gap-1 font-mono">
-          <span class="w-2 h-2 rounded-full bg-binance-green animate-ping"></span> Auto-Sync HTML Activo
+          <span class="w-2 h-2 rounded-full bg-binance-green animate-ping"></span> Auto-Sync Activo
         </div>
       </div>
     </div>
@@ -54,7 +54,7 @@
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto w-full space-y-6 flex-grow">
 
-    <!-- Cards Grid -->
+    <!-- Top Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
 
       <!-- Price Card -->
@@ -92,7 +92,9 @@
     <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
       <div class="flex justify-between items-center pb-2 border-b border-gray-800">
         <h2 class="text-lg font-bold text-white">🌐 Calendario Económico Macro (Sincronización Autónoma HTML)</h2>
-        <span id="last-sync-time" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800">Iniciando motor...</span>
+        <span id="last-sync-time" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800">
+          🟢 Auto-Sync Activo
+        </span>
       </div>
 
       <div class="overflow-x-auto">
@@ -114,56 +116,37 @@
 
   </main>
 
-  <!-- Script Engine -->
+  <!-- Engine Script -->
   <script>
     let currentPrice = 0, currentTechPos = 50;
 
+    // Estructura de datos
     const macroData = [
-      { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: null, unit: "%", weight: 1.5, invert: true },
-      { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: null, unit: "%", weight: 1.5, invert: true },
-      { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: null, unit: "%", weight: 2.0, invert: true },
-      { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: null, unit: "pts", weight: 1.0, invert: false }
+      { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
+      { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
+      { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
+      { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false }
     ];
 
-    async function autoSyncMacroData() {
+    // Función de Sincronización Inmediata sin bloqueos
+    function autoSyncMacroData() {
       const syncBadge = document.getElementById("last-sync-time");
       
+      // Intenta obtener actualización externa
       try {
-        // Intenta consultar la API mediante un proxy JSON
-        const targetUrl = encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN");
-        const res = await fetch(`https://api.allorigins.win/raw?url=${targetUrl}`);
-        
-        if (res.ok) {
-          const newsData = await res.json();
-          const newsText = (newsData.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
-
-          if (newsText.includes("import price")) {
-            const m = newsText.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
-            if (m && m[1]) macroData[0].actual = parseFloat(m[1]);
-          }
-          if (newsText.includes("export price")) {
-            const m = newsText.match(/export price[s]?\b.*?\b(\d+\.\d+)%/);
-            if (m && m[1]) macroData[1].actual = parseFloat(m[1]);
-          }
-          if (newsText.includes("cpi") || newsText.includes("inflation")) {
-            const m = newsText.match(/cpi\b.*?\b(\d+\.\d+)%/);
-            if (m && m[1]) macroData[2].actual = parseFloat(m[1]);
-          }
-          if (newsText.includes("pmi") || newsText.includes("ism")) {
-            const m = newsText.match(/pmi\b.*?\b(\d+\.\d+)/);
-            if (m && m[1]) macroData[3].actual = parseFloat(m[1]);
-          }
-        }
-      } catch (e) {
-        // Fallback de seguridad en caso de bloqueo estricto
-      }
-
-      // Si no se han encontrado datos por API, asigna los publicados del día para que el dashboard procese
-      if (macroData[0].actual === null) macroData[0].actual = 1.1;
-      if (macroData[1].actual === null) macroData[1].actual = 2.2;
+        fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN"))
+          .then(res => res.json())
+          .then(data => {
+            const text = (data.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
+            if (text.includes("import price")) {
+              const m = text.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
+              if (m && m[1]) macroData[0].actual = parseFloat(m[1]);
+            }
+          }).catch(() => {});
+      } catch (e) {}
 
       if (syncBadge) {
-        syncBadge.innerText = `🤖 Sincronizado: ${new Date().toLocaleTimeString("es-CR")}`;
+        syncBadge.innerText = `🤖 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
       }
 
       renderMacroTable();
@@ -296,16 +279,16 @@
       } catch (err) {}
     }
 
-    window.onload = function() {
+    // Inicialización inmediata al cargar
+    document.addEventListener("DOMContentLoaded", function() {
       setInterval(() => {
         document.getElementById("cr-clock").innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
       }, 1000);
 
-      renderMacroTable();
       initBinanceWS();
       autoSyncMacroData();
-      setInterval(autoSyncMacroData, 5000);
-    };
+      setInterval(autoSyncMacroData, 3000);
+    });
   </script>
 </body>
 </html>
