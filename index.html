@@ -44,9 +44,9 @@
           <div class="font-bold text-gray-200" id="ws-status">Conectando Binance...</div>
           <div class="text-binance-yellow font-mono text-[11px] font-semibold" id="cr-clock">CR Time: --:--:--</div>
         </div>
-        <div class="ml-2 px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-950/60 text-binance-green border border-emerald-800/60 flex items-center gap-1 font-mono">
-          <span class="w-2 h-2 rounded-full bg-binance-green animate-ping"></span> Auto-Sync Activo
-        </div>
+        <button onclick="requestNotificationPermission()" class="ml-2 px-2.5 py-1 text-[11px] font-semibold rounded bg-binance-card text-binance-yellow border border-binance-yellow/40 hover:bg-binance-yellow hover:text-black transition-all font-mono flex items-center gap-1">
+          🔔 Activar Alertas
+        </button>
       </div>
     </div>
   </header>
@@ -77,12 +77,27 @@
       </div>
 
       <!-- Signal Card -->
-      <div id="signal-card" class="md:col-span-4 bg-binance-card p-5 rounded-2xl border-2 border-gray-700 shadow-xl text-center">
-        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Señal Cuantitativa Final</span>
-        <div id="signal-output" class="text-3xl font-black text-binance-yellow my-3">EVALUANDO...</div>
-        <div class="grid grid-cols-3 gap-1 text-[11px] bg-binance-black/80 p-2.5 rounded-xl border border-gray-800 font-mono">
+      <div id="signal-card" class="md:col-span-4 bg-binance-card p-5 rounded-2xl border-2 border-gray-700 shadow-xl text-center flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Señal Cuantitativa Final</span>
+          <div id="signal-output" class="text-3xl font-black text-binance-yellow my-2">EVALUANDO...</div>
+        </div>
+        
+        <!-- Módulo de Registro de Hora y Tiempo Transcurrido -->
+        <div class="bg-binance-black/90 p-2 rounded-xl border border-gray-800 mb-2 font-mono text-xs text-left space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-400">Hora de Cambio:</span>
+            <span id="signal-timestamp" class="text-binance-yellow font-bold">--:--:--</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-400">Hace Cuánto:</span>
+            <span id="signal-elapsed" class="text-emerald-400 font-bold">Sin cambios aún</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1 text-[11px] bg-binance-black/80 p-2 rounded-xl border border-gray-800 font-mono">
           <div>Macro: <span id="score-macro" class="font-bold text-white">0.0</span></div>
-          <div>Estructural: <span id="score-struct" class="font-bold text-white">0.0</span></div>
+          <div>Estruct: <span id="score-struct" class="font-bold text-white">0.0</span></div>
           <div>Técnico: <span id="score-tech" class="font-bold text-white">0.0</span></div>
         </div>
       </div>
@@ -309,6 +324,10 @@
     const FMP_API_KEY = "exL5USAvIGPpWF1HKYN6cL2pPU5Z550g";
     let currentPrice = 0, currentTechPos = 50;
 
+    // Variables de Control de Señal y Tiempos
+    let currentSignalState = "EVALUANDO...";
+    let signalChangeTimestamp = null;
+
     const macroData = [
       { id: "import_price", searchKeys: ["import"], date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
       { id: "export_price", searchKeys: ["export"], date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
@@ -319,6 +338,57 @@
       { id: "fed_rate", searchKeys: ["fed", "interest rate", "fomc"], date: "12:00 PM", name: "Decisión Tipos de Interés FED", forecast: 4.75, actual: null, unit: "%", weight: 2.5, invert: true }
     ];
 
+    // --- SISTEMA DE AUDIO Y NOTIFICACIONES PUSH ---
+    function playSignalSound(type) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === "BUY") {
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+        } else if (type === "SELL") {
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+          osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3); // A4
+        } else {
+          osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+        }
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch (e) {}
+    }
+
+    function requestNotificationPermission() {
+      if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification("BTCUSD Quant Engine", {
+              body: " Alert de cambios activada correctamente.",
+              icon: "https://bin.bnbstatic.com/static/images/common/favicon.ico"
+            });
+          }
+        });
+      }
+    }
+
+    function triggerPushNotification(newSignal) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(` CAMBIO DE SEÑAL BTCUSD: ${newSignal}`, {
+          body: `El modelo cuantitativo ha cambiado a ${newSignal} a las ${new Date().toLocaleTimeString("es-CR")}`,
+          icon: "https://bin.bnbstatic.com/static/images/common/favicon.ico"
+        });
+      }
+    }
+
+    // --- EVALUACIONES Y CÁLCULOS DE SCORE ---
     function evaluateMacroItem(item) {
       if (item.actual === null || isNaN(item.actual)) {
         return { score: 0, status: "PENDIENTE ⏳", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
@@ -339,7 +409,6 @@
     function calculateStructuralScore() {
       let structScore = 0;
 
-      // 1. ETF Spot (04:30 PM CR)
       const etfVal = parseFloat(document.getElementById("input-etf").value) || 0;
       let etfPts = 0;
       const badgeEtf = document.getElementById("badge-etf");
@@ -350,7 +419,6 @@
       document.getElementById("pts-etf").className = etfPts > 0 ? 'text-binance-green font-bold' : etfPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += etfPts;
 
-      // 2. DXY (07:30 AM - 03:00 PM CR)
       const dxyVal = document.getElementById("select-dxy").value;
       let dxyPts = 0;
       const badgeDxy = document.getElementById("badge-dxy");
@@ -361,7 +429,6 @@
       document.getElementById("pts-dxy").className = dxyPts > 0 ? 'text-binance-green font-bold' : dxyPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += dxyPts;
 
-      // 3. Liquidez Stablecoins (08:00 AM CR)
       const liqVal = document.getElementById("select-liquidity").value;
       let liqPts = 0;
       const badgeLiq = document.getElementById("badge-liquidity");
@@ -372,7 +439,6 @@
       document.getElementById("pts-liquidity").className = liqPts > 0 ? 'text-binance-green font-bold' : liqPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += liqPts;
 
-      // 4. Geopolítica (24/7 - Cierre 04:00 PM CR)
       const geoVal = document.getElementById("select-geo").value;
       let geoPts = 0;
       const badgeGeo = document.getElementById("badge-geo");
@@ -384,6 +450,75 @@
       structScore += geoPts;
 
       return structScore;
+    }
+
+    function calculateSignal() {
+      let macroScore = 0;
+      macroData.forEach(item => { macroScore += evaluateMacroItem(item).score; });
+
+      const structScore = calculateStructuralScore();
+      const techScore = parseFloat(((currentTechPos - 50) / 10).toFixed(1));
+      
+      document.getElementById("score-macro").innerText = (macroScore >= 0 ? "+" : "") + macroScore.toFixed(1);
+      document.getElementById("score-struct").innerText = (structScore >= 0 ? "+" : "") + structScore.toFixed(1);
+      document.getElementById("score-tech").innerText = (techScore >= 0 ? "+" : "") + techScore.toFixed(1);
+
+      const totalScore = macroScore + structScore + techScore;
+      const signalOutput = document.getElementById("signal-output");
+      let newSignal = "⚖️ NEUTRAL / ESPERAR";
+      let signalClass = "text-3xl font-black text-binance-yellow my-2";
+      let soundType = "NEUTRAL";
+
+      if (totalScore >= 3.0) {
+        newSignal = "🚀 COMPRA FUERTE";
+        signalClass = "text-3xl font-black text-binance-green my-2";
+        soundType = "BUY";
+      } else if (totalScore <= -3.0) {
+        newSignal = "🔻 VENTA FUERTE";
+        signalClass = "text-3xl font-black text-binance-red my-2";
+        soundType = "SELL";
+      }
+
+      if (signalOutput) {
+        signalOutput.innerText = newSignal;
+        signalOutput.className = signalClass;
+      }
+
+      // CONTROL DE CAMBIO DE SEÑAL Y ALERTAS
+      if (currentSignalState !== newSignal) {
+        currentSignalState = newSignal;
+        signalChangeTimestamp = new Date();
+
+        // Actualizar hora de cambio en UI
+        document.getElementById("signal-timestamp").innerText = signalChangeTimestamp.toLocaleTimeString("es-CR");
+        updateElapsedTime();
+
+        // Disparar alertas de sonido y notificación push
+        playSignalSound(soundType);
+        triggerPushNotification(newSignal);
+      }
+
+      updateTimeSlotBadges();
+    }
+
+    function updateElapsedTime() {
+      if (!signalChangeTimestamp) return;
+      const now = new Date();
+      const diffMs = now - signalChangeTimestamp;
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHrs = Math.floor(diffMin / 60);
+
+      let elapsedStr = "";
+      if (diffHrs > 0) {
+        elapsedStr = `Hace ${diffHrs}h ${diffMin % 60}m`;
+      } else if (diffMin > 0) {
+        elapsedStr = `Hace ${diffMin} min ${diffSec % 60}s`;
+      } else {
+        elapsedStr = `Hace ${diffSec} seg`;
+      }
+
+      document.getElementById("signal-elapsed").innerText = elapsedStr;
     }
 
     function updateRowUI(index) {
@@ -440,42 +575,6 @@
           }
         }
       });
-    }
-
-    function calculateSignal() {
-      let macroScore = 0;
-      macroData.forEach(item => {
-        macroScore += evaluateMacroItem(item).score;
-      });
-
-      const structScore = calculateStructuralScore();
-      const techScore = parseFloat(((currentTechPos - 50) / 10).toFixed(1));
-      
-      const scoreMacroElem = document.getElementById("score-macro");
-      const scoreStructElem = document.getElementById("score-struct");
-      const scoreTechElem = document.getElementById("score-tech");
-      
-      if (scoreMacroElem) scoreMacroElem.innerText = (macroScore >= 0 ? "+" : "") + macroScore.toFixed(1);
-      if (scoreStructElem) scoreStructElem.innerText = (structScore >= 0 ? "+" : "") + structScore.toFixed(1);
-      if (scoreTechElem) scoreTechElem.innerText = (techScore >= 0 ? "+" : "") + techScore.toFixed(1);
-
-      const totalScore = macroScore + structScore + techScore;
-      const signalOutput = document.getElementById("signal-output");
-
-      if (signalOutput) {
-        if (totalScore >= 3.0) {
-          signalOutput.innerText = "🚀 COMPRA FUERTE";
-          signalOutput.className = "text-3xl font-black text-binance-green my-3";
-        } else if (totalScore <= -3.0) {
-          signalOutput.innerText = "🔻 VENTA FUERTE";
-          signalOutput.className = "text-3xl font-black text-binance-red my-3";
-        } else {
-          signalOutput.innerText = "⚖️ NEUTRAL / ESPERAR";
-          signalOutput.className = "text-3xl font-black text-binance-yellow my-3";
-        }
-      }
-
-      updateTimeSlotBadges();
     }
 
     function renderMacroTable() {
@@ -612,6 +711,9 @@
       setInterval(() => {
         const clockElem = document.getElementById("cr-clock");
         if (clockElem) clockElem.innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
+        
+        // Actualizar el contador "Hace X tiempo" cada segundo
+        updateElapsedTime();
       }, 1000);
 
       renderMacroTable();
