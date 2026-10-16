@@ -33,9 +33,9 @@
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-binance-dark p-4 rounded-2xl border border-binance-border shadow-xl">
       <div>
         <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE (PURE HTML)</span>
+          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE</span>
         </h1>
-        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side • Sin Instalaciones Extra</p>
+        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3 bg-binance-black/60 px-4 py-2 rounded-xl border border-binance-border">
@@ -116,42 +116,15 @@
 
   </main>
 
-  <!-- Engine Script -->
   <script>
     let currentPrice = 0, currentTechPos = 50;
 
-    // Estructura de datos
     const macroData = [
       { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
       { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
       { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
       { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false }
     ];
-
-    // Función de Sincronización Inmediata sin bloqueos
-    function autoSyncMacroData() {
-      const syncBadge = document.getElementById("last-sync-time");
-      
-      // Intenta obtener actualización externa
-      try {
-        fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN"))
-          .then(res => res.json())
-          .then(data => {
-            const text = (data.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
-            if (text.includes("import price")) {
-              const m = text.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) macroData[0].actual = parseFloat(m[1]);
-            }
-          }).catch(() => {});
-      } catch (e) {}
-
-      if (syncBadge) {
-        syncBadge.innerText = `🤖 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
-      }
-
-      renderMacroTable();
-      calculateSignal();
-    }
 
     function evaluateMacroItem(item) {
       if (item.actual === null || isNaN(item.actual)) {
@@ -200,6 +173,24 @@
       }
     }
 
+    function updateRowUI(index) {
+      const item = macroData[index];
+      const evalRes = evaluateMacroItem(item);
+      const row = document.getElementById(`macro-row-${index}`);
+      if (!row) return;
+
+      const statusCell = row.querySelector('.status-cell');
+      const scoreCell = row.querySelector('.score-cell');
+
+      if (statusCell) {
+        statusCell.innerHTML = `<span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>`;
+      }
+      if (scoreCell) {
+        scoreCell.className = `py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}`;
+        scoreCell.innerText = `${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts`;
+      }
+    }
+
     function renderMacroTable() {
       const tbody = document.getElementById("macro-tbody");
       if (!tbody) return;
@@ -208,6 +199,7 @@
       macroData.forEach((item, index) => {
         const evalRes = evaluateMacroItem(item);
         const tr = document.createElement("tr");
+        tr.id = `macro-row-${index}`;
 
         const val = item.actual !== null ? item.actual : "";
 
@@ -220,10 +212,10 @@
                    oninput="onManualInput(${index}, this.value)"
                    class="w-24 bg-binance-black border border-gray-700 rounded px-2 py-1 text-center text-xs text-binance-yellow font-bold focus:outline-none">
           </td>
-          <td class="py-3 px-3 text-center">
+          <td class="py-3 px-3 text-center status-cell">
             <span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>
           </td>
-          <td class="py-3 px-3 text-right font-mono font-bold ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}">
+          <td class="py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}">
             ${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts
           </td>
         `;
@@ -234,8 +226,33 @@
     function onManualInput(idx, val) {
       const parsed = parseFloat(val.replace('%', ''));
       macroData[idx].actual = isNaN(parsed) ? null : parsed;
+      updateRowUI(idx);
       calculateSignal();
-      renderMacroTable();
+    }
+
+    function autoSyncMacroData() {
+      const syncBadge = document.getElementById("last-sync-time");
+      
+      try {
+        fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN"))
+          .then(res => res.json())
+          .then(data => {
+            const text = (data.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
+            if (text.includes("import price")) {
+              const m = text.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
+              if (m && m[1]) {
+                macroData[0].actual = parseFloat(m[1]);
+                updateRowUI(0);
+              }
+            }
+          }).catch(() => {});
+      } catch (e) {}
+
+      if (syncBadge) {
+        syncBadge.innerText = `🤖 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
+      }
+
+      calculateSignal();
     }
 
     function initBinanceWS() {
@@ -243,7 +260,8 @@
         const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@ticker");
 
         ws.onopen = () => {
-          document.getElementById("ws-status").innerText = "Binance WS: Conectado";
+          const statusElem = document.getElementById("ws-status");
+          if (statusElem) statusElem.innerText = "Binance WS: Conectado";
         };
 
         ws.onmessage = (e) => {
@@ -251,8 +269,17 @@
           currentPrice = parseFloat(d.c);
           const high = parseFloat(d.h);
           const low = parseFloat(d.l);
+          const changePercent = parseFloat(d.P);
 
-          document.getElementById("btc-price").innerText = `$ ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          const priceElem = document.getElementById("btc-price");
+          if (priceElem) priceElem.innerText = `$ ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+          const badgeElem = document.getElementById("price-change-badge");
+          if (badgeElem) {
+            const isPos = changePercent >= 0;
+            badgeElem.innerText = `24h: ${isPos ? '+' : ''}${changePercent.toFixed(2)}%`;
+            badgeElem.className = `inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg ${isPos ? 'bg-emerald-950 text-binance-green border border-emerald-800' : 'bg-rose-950 text-binance-red border border-rose-800'}`;
+          }
 
           if (high > low) {
             currentTechPos = Math.min(Math.max(((currentPrice - low) / (high - low)) * 100, 0), 100);
@@ -279,15 +306,16 @@
       } catch (err) {}
     }
 
-    // Inicialización inmediata al cargar
     document.addEventListener("DOMContentLoaded", function() {
       setInterval(() => {
-        document.getElementById("cr-clock").innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
+        const clockElem = document.getElementById("cr-clock");
+        if (clockElem) clockElem.innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
       }, 1000);
 
+      renderMacroTable();
       initBinanceWS();
       autoSyncMacroData();
-      setInterval(autoSyncMacroData, 3000);
+      setInterval(autoSyncMacroData, 60000);
     });
   </script>
 </body>
