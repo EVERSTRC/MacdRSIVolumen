@@ -89,14 +89,14 @@
 
     </div>
 
-    <!-- NUEVO: Factores Estructurales Cripto & Entorno Global -->
+    <!-- Factores Estructurales Cripto con Horarios de Actualización -->
     <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
       <div class="flex justify-between items-center pb-2 border-b border-gray-800">
         <div>
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
             📊 Factores Estructurales Cripto & Entorno Global (Wall St / Liquidez / Geopolítica)
           </h2>
-          <p class="text-xs text-gray-400 mt-0.5">Indicadores de impacto continuo que no figuran en el calendario económico tradicional.</p>
+          <p class="text-xs text-gray-400 mt-0.5">Indicadores de impacto continuo con su respectivo horario de actualización / consolidación en Costa Rica (CR Time).</p>
         </div>
         <span class="text-xs font-mono text-binance-yellow bg-yellow-950/60 px-3 py-1 rounded border border-yellow-800">
           ⚙️ Modo Interactivo
@@ -109,45 +109,54 @@
         <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
           <div>
             <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold text-gray-400 uppercase">Flujo ETF Spot BTC (Diario)</span>
+              <span class="text-xs font-bold font-mono text-binance-yellow">04:30 PM CR</span>
               <span id="badge-etf" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
             </div>
-            <p class="text-xs text-gray-400 mb-2">Entradas / Salidas Netas (BlackRock, Fidelity, etc.)</p>
+            <h3 class="text-sm font-bold text-white">Flujo ETF Spot BTC</h3>
+            <p class="text-xs text-gray-400 mb-2">Consolidación de entradas/salidas netas tras cierre NY.</p>
             <div class="flex items-center gap-2">
               <input type="number" id="input-etf" value="250" step="10" oninput="calculateSignal()"
                      class="w-full bg-binance-black border border-gray-700 rounded px-3 py-1.5 text-sm text-binance-yellow font-bold font-mono focus:outline-none">
               <span class="text-xs font-mono text-gray-400 font-bold">$M</span>
             </div>
           </div>
-          <div class="text-[11px] text-gray-500 font-mono">Impacto en Señal: <span id="pts-etf" class="text-binance-green font-bold">+2.0 pts</span></div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
+            <span class="text-gray-500">Impacto:</span>
+            <span id="pts-etf" class="text-binance-green font-bold">+2.0 pts</span>
+          </div>
         </div>
 
         <!-- Índice del Dólar (DXY) -->
         <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
           <div>
             <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold text-gray-400 uppercase">Tendencia DXY (Dólar)</span>
+              <span class="text-xs font-bold font-mono text-binance-yellow">07:30 AM - 03:00 PM CR</span>
               <span id="badge-dxy" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
             </div>
-            <p class="text-xs text-gray-400 mb-2">Fortaleza del USD (Correlación Inversa)</p>
+            <h3 class="text-sm font-bold text-white">Tendencia DXY (Dólar)</h3>
+            <p class="text-xs text-gray-400 mb-2">Sesión activa de contado e intradía de Wall Street.</p>
             <select id="select-dxy" onchange="calculateSignal()"
                     class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
               <option value="bearish">DXY Cayendo / Débil (Soporta BTC)</option>
               <option value="neutral">DXY Neutral / Lateral</option>
-              <option value="bullish">DXY Enfocado a la Subida / Fuerte (Presiona BTC)</option>
+              <option value="bullish">DXY En Subida / Fuerte (Presiona BTC)</option>
             </select>
           </div>
-          <div class="text-[11px] text-gray-500 font-mono">Impacto en Señal: <span id="pts-dxy" class="text-binance-green font-bold">+1.5 pts</span></div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
+            <span class="text-gray-500">Impacto:</span>
+            <span id="pts-dxy" class="text-binance-green font-bold">+1.5 pts</span>
+          </div>
         </div>
 
         <!-- Liquidez de Stablecoins (USDT/USDC) -->
         <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
           <div>
             <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold text-gray-400 uppercase">Liquidez Stablecoins</span>
+              <span class="text-xs font-bold font-mono text-binance-yellow">08:00 AM CR</span>
               <span id="badge-liquidity" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
             </div>
-            <p class="text-xs text-gray-400 mb-2">Impresión / Emisión de USDT/USDC</p>
+            <h3 class="text-sm font-bold text-white">Liquidez Stablecoins</h3>
+            <p class="text-xs text-gray-400 mb-2">Emisión/Acuñación diaria de USDT/USDC (Apertura US).</p>
             <select id="select-liquidity" onchange="calculateSignal()"
                     class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
               <option value="expansion">Expansión de Oferta (Inyección de Capital)</option>
@@ -155,25 +164,32 @@
               <option value="contraction">Contracción / Retiro de Liquidez</option>
             </select>
           </div>
-          <div class="text-[11px] text-gray-500 font-mono">Impacto en Señal: <span id="pts-liquidity" class="text-binance-green font-bold">+1.0 pts</span></div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
+            <span class="text-gray-500">Impacto:</span>
+            <span id="pts-liquidity" class="text-binance-green font-bold">+1.0 pts</span>
+          </div>
         </div>
 
         <!-- Entorno Geopolítico / Riesgo Global -->
         <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
           <div>
             <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold text-gray-400 uppercase">Riesgo Geopolítico</span>
+              <span class="text-xs font-bold font-mono text-binance-yellow">04:00 PM CR / 24-7</span>
               <span id="badge-geo" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">NEUTRAL 🟡</span>
             </div>
-            <p class="text-xs text-gray-400 mb-2">Aversión al Riesgo Global (Risk-On / Risk-Off)</p>
+            <h3 class="text-sm font-bold text-white">Riesgo Geopolítico</h3>
+            <p class="text-xs text-gray-400 mb-2">Evaluación continua de aversión global al riesgo.</p>
             <select id="select-geo" onchange="calculateSignal()"
                     class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
               <option value="risk_on">Risk-On (Apetito por Riesgo Global)</option>
               <option value="neutral" selected>Riesgo Estable / Calma Relativa</option>
-              <option value="risk_off">Risk-Off (Tensión / Tensión Béislica)</option>
+              <option value="risk_off">Risk-Off (Tensión / Eventos Béislicos)</option>
             </select>
           </div>
-          <div class="text-[11px] text-gray-500 font-mono">Impacto en Señal: <span id="pts-geo" class="text-gray-400 font-bold">0.0 pts</span></div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
+            <span class="text-gray-500">Impacto:</span>
+            <span id="pts-geo" class="text-gray-400 font-bold">0.0 pts</span>
+          </div>
         </div>
 
       </div>
@@ -323,7 +339,7 @@
     function calculateStructuralScore() {
       let structScore = 0;
 
-      // 1. ETF Spot
+      // 1. ETF Spot (04:30 PM CR)
       const etfVal = parseFloat(document.getElementById("input-etf").value) || 0;
       let etfPts = 0;
       const badgeEtf = document.getElementById("badge-etf");
@@ -334,7 +350,7 @@
       document.getElementById("pts-etf").className = etfPts > 0 ? 'text-binance-green font-bold' : etfPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += etfPts;
 
-      // 2. DXY
+      // 2. DXY (07:30 AM - 03:00 PM CR)
       const dxyVal = document.getElementById("select-dxy").value;
       let dxyPts = 0;
       const badgeDxy = document.getElementById("badge-dxy");
@@ -345,7 +361,7 @@
       document.getElementById("pts-dxy").className = dxyPts > 0 ? 'text-binance-green font-bold' : dxyPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += dxyPts;
 
-      // 3. Liquidez Stablecoins
+      // 3. Liquidez Stablecoins (08:00 AM CR)
       const liqVal = document.getElementById("select-liquidity").value;
       let liqPts = 0;
       const badgeLiq = document.getElementById("badge-liquidity");
@@ -356,7 +372,7 @@
       document.getElementById("pts-liquidity").className = liqPts > 0 ? 'text-binance-green font-bold' : liqPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
       structScore += liqPts;
 
-      // 4. Geopolítica
+      // 4. Geopolítica (24/7 - Cierre 04:00 PM CR)
       const geoVal = document.getElementById("select-geo").value;
       let geoPts = 0;
       const badgeGeo = document.getElementById("badge-geo");
