@@ -198,8 +198,8 @@
           </p>
         </div>
 
-        <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-900/50">
-          <span id="last-sync-time">Última verificación: En espera...</span>
+        <div class="flex items-center gap-2 text-xs font-mono">
+          <span id="last-sync-time" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800">Última verificación: En espera...</span>
         </div>
       </div>
 
@@ -245,15 +245,20 @@
       { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: null, unit: "pts", weight: 1.0, invert: false }
     ];
 
-    // Escaneo autónomo a través del feed público
+    // Auto-Sync leyendo mediante proxy AllOrigins para evitar bloqueos CORS en GitHub Pages
     async function autoSyncMacroData() {
       const syncBadge = document.getElementById("last-sync-time");
+      
+      const targetUrl = encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN");
+      const proxyUrl = `https://api.allorigins.win/raw?url=${targetUrl}&_ts=${Date.now()}`;
+
       try {
-        const res = await fetch("https://min-api.cryptocompare.com/data/v2/news/?lang=EN");
+        const res = await fetch(proxyUrl);
         if (res.ok) {
           const newsData = await res.json();
           const newsText = (newsData.Data || []).map(n => n.title + " " + n.body).join(" ").toLowerCase();
 
+          // Detección automática por frases y palabras clave
           if (newsText.includes("import price") || newsText.includes("import prices")) {
             const match = newsText.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
             if (match && match[1]) macroData[0].actual = parseFloat(match[1]);
@@ -262,7 +267,7 @@
             const match = newsText.match(/export price[s]?\b.*?\b(\d+\.\d+)%/);
             if (match && match[1]) macroData[1].actual = parseFloat(match[1]);
           }
-          if (newsText.includes("cpi") || newsText.includes("inflation")) {
+          if (newsText.includes("cpi") || newsText.includes("consumer price index")) {
             const match = newsText.match(/cpi\b.*?\b(\d+\.\d+)%/);
             if (match && match[1]) macroData[2].actual = parseFloat(match[1]);
           }
@@ -270,14 +275,18 @@
             const match = newsText.match(/pmi\b.*?\b(\d+\.\d+)/);
             if (match && match[1]) macroData[3].actual = parseFloat(match[1]);
           }
-        }
 
-        if (syncBadge) {
-          syncBadge.innerText = `Última verificación: ${new Date().toLocaleTimeString("es-CR")}`;
+          if (syncBadge) {
+            syncBadge.innerText = `🤖 API Sync Activo (${new Date().toLocaleTimeString("es-CR")})`;
+            syncBadge.className = "text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800";
+          }
+        } else {
+          throw new Error("Proxy error");
         }
       } catch (e) {
         if (syncBadge) {
           syncBadge.innerText = `Modo Manual / Standby (${new Date().toLocaleTimeString("es-CR")})`;
+          syncBadge.className = "text-xs font-mono text-yellow-400 bg-yellow-950/40 px-3 py-1 rounded border border-yellow-800";
         }
       }
 
@@ -460,7 +469,7 @@
       renderMacroTable();
       initBinanceWS();
       autoSyncMacroData();
-      setInterval(autoSyncMacroData, 5000);
+      setInterval(autoSyncMacroData, 4000);
     };
   </script>
 </body>
