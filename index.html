@@ -202,13 +202,33 @@
   <script>
     let currentPrice = 0, currentTechPos = 50;
 
-    // Estructura de datos
+    // Lista ampliada de datos macroeconómicos
     const macroData = [
       { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
       { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
       { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
-      { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false }
+      { id: "nfp", date: "06:30 AM", name: "NFP Nóminas No Agrícolas", forecast: 175, actual: null, unit: "K", weight: 2.0, invert: false },
+      { id: "jobless_claims", date: "06:30 AM", name: "Peticiones de Subsidio Desempleo", forecast: 220, actual: null, unit: "K", weight: 1.0, invert: true },
+      { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false },
+      { id: "fed_rate", date: "12:00 PM", name: "Decisión Tipos de Interés FED", forecast: 4.75, actual: null, unit: "%", weight: 2.5, invert: true }
     ];
+
+    function evaluateMacroItem(item) {
+      if (item.actual === null || isNaN(item.actual)) {
+        return { score: 0, status: "PENDIENTE ⏳", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
+      }
+      const diff = item.actual - item.forecast;
+      if (diff === 0) {
+        return { score: 0, status: "NEUTRAL 🟡", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
+      }
+      const isPositive = item.invert ? diff < 0 : diff > 0;
+      const score = isPositive ? item.weight : -item.weight;
+      return {
+        score,
+        status: isPositive ? "BULLISH 🟢" : "BEARISH 🔴",
+        badgeClass: isPositive ? "bg-emerald-950 text-binance-green border-emerald-800" : "bg-rose-950 text-binance-red border-rose-800"
+      };
+    }
 
     function updateRowUI(index) {
       const item = macroData[index];
@@ -228,77 +248,41 @@
       }
     }
 
-    function evaluateMacroItem(item) {
-      if (item.actual === null || isNaN(item.actual)) {
-        return { score: 0, status: "PENDIENTE ⏳", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
-      }
-      const diff = item.actual - item.forecast;
-      if (diff === 0) {
-        return { score: 0, status: "NEUTRAL 🟡", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
-      }
-      const isPositive = item.invert ? diff < 0 : diff > 0;
-      const score = isPositive ? item.weight : -item.weight;
-      return {
-        score,
-        status: isPositive ? "BULLISH 🟢" : "BEARISH 🔴",
-        badgeClass: isPositive ? "bg-emerald-950 text-binance-green border-emerald-800" : "bg-rose-950 text-binance-red border-rose-800"
-      };
-    }
-
     function updateTimeSlotBadges() {
-      // 06:30 AM items
-      const items0630 = macroData.filter(i => i.date === "06:30 AM");
-      let score0630 = 0;
-      let count0630 = 0;
-      items0630.forEach(i => {
-        if (i.actual !== null && !isNaN(i.actual)) {
-          score0630 += evaluateMacroItem(i).score;
-          count0630++;
-        }
-      });
-      const badge0630 = document.getElementById("slot-status-0630");
-      if (badge0630) {
-        if (count0630 === 0) {
-          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-          badge0630.innerText = "PENDIENTE ⏳";
-        } else if (score0630 > 0) {
-          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
-          badge0630.innerText = "BULLISH 🟢";
-        } else if (score0630 < 0) {
-          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
-          badge0630.innerText = "BEARISH 🔴";
-        } else {
-          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-          badge0630.innerText = "NEUTRAL 🟡";
-        }
-      }
+      const slots = [
+        { time: "06:30 AM", elemId: "slot-status-0630" },
+        { time: "08:00 AM", elemId: "slot-status-0800" },
+        { time: "12:00 PM", elemId: "slot-status-1200" }
+      ];
 
-      // 08:00 AM items
-      const items0800 = macroData.filter(i => i.date === "08:00 AM");
-      let score0800 = 0;
-      let count0800 = 0;
-      items0800.forEach(i => {
-        if (i.actual !== null && !isNaN(i.actual)) {
-          score0800 += evaluateMacroItem(i).score;
-          count0800++;
+      slots.forEach(s => {
+        const items = macroData.filter(i => i.date === s.time);
+        let score = 0;
+        let count = 0;
+        items.forEach(i => {
+          if (i.actual !== null && !isNaN(i.actual)) {
+            score += evaluateMacroItem(i).score;
+            count++;
+          }
+        });
+
+        const badge = document.getElementById(s.elemId);
+        if (badge) {
+          if (count === 0) {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+            badge.innerText = "PENDIENTE ⏳";
+          } else if (score > 0) {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
+            badge.innerText = "BULLISH 🟢";
+          } else if (score < 0) {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
+            badge.innerText = "BEARISH 🔴";
+          } else {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+            badge.innerText = "NEUTRAL 🟡";
+          }
         }
       });
-      const badge0800 = document.getElementById("slot-status-0800");
-      if (badge0800) {
-        if (count0800 === 0) {
-          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-          badge0800.innerText = "PENDIENTE ⏳";
-        } else if (score0800 > 0) {
-          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
-          badge0800.innerText = "BULLISH 🟢";
-        } else if (score0800 < 0) {
-          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
-          badge0800.innerText = "BEARISH 🔴";
-        } else {
-          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-          badge0800.innerText = "NEUTRAL 🟡";
-        }
-      }
     }
 
     function calculateSignal() {
