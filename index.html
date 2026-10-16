@@ -202,7 +202,6 @@
   <script>
     let currentPrice = 0, currentTechPos = 50;
 
-    // Lista ampliada de datos macroeconómicos
     const macroData = [
       { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
       { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
@@ -350,7 +349,7 @@
     }
 
     function onManualInput(idx, val) {
-      const parsed = parseFloat(val.replace('%', ''));
+      const parsed = parseFloat(val.replace('%', '').replace('K', '').replace('pts', ''));
       macroData[idx].actual = isNaN(parsed) ? null : parsed;
       updateRowUI(idx);
       calculateSignal();
@@ -364,12 +363,41 @@
           .then(res => res.json())
           .then(data => {
             const text = (data.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
+            
+            // 1. Import Price
             if (text.includes("import price")) {
               const m = text.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) {
-                macroData[0].actual = parseFloat(m[1]);
-                updateRowUI(0);
-              }
+              if (m && m[1]) { macroData[0].actual = parseFloat(m[1]); updateRowUI(0); }
+            }
+            // 2. Export Price
+            if (text.includes("export price")) {
+              const m = text.match(/export price[s]?\b.*?\b(\d+\.\d+)%/);
+              if (m && m[1]) { macroData[1].actual = parseFloat(m[1]); updateRowUI(1); }
+            }
+            // 3. CPI
+            if (text.includes("cpi") || text.includes("consumer price index")) {
+              const m = text.match(/cpi\b.*?\b(\d+\.\d+)%/);
+              if (m && m[1]) { macroData[2].actual = parseFloat(m[1]); updateRowUI(2); }
+            }
+            // 4. NFP
+            if (text.includes("nonfarm payrolls") || text.includes("nfp")) {
+              const m = text.match(/(?:nonfarm payrolls|nfp)\b.*?\b(\d+)k/);
+              if (m && m[1]) { macroData[3].actual = parseFloat(m[1]); updateRowUI(3); }
+            }
+            // 5. Jobless Claims
+            if (text.includes("jobless claims") || text.includes("unemployment claims")) {
+              const m = text.match(/jobless claims\b.*?\b(\d+)k/);
+              if (m && m[1]) { macroData[4].actual = parseFloat(m[1]); updateRowUI(4); }
+            }
+            // 6. PMI
+            if (text.includes("pmi") || text.includes("ism services")) {
+              const m = text.match(/pmi\b.*?\b(\d+\.\d+)/);
+              if (m && m[1]) { macroData[5].actual = parseFloat(m[1]); updateRowUI(5); }
+            }
+            // 7. FED Rate
+            if (text.includes("fed rate") || text.includes("interest rate decision") || text.includes("fomc")) {
+              const m = text.match(/(?:fed|rate)\b.*?\b(\d+\.\d+)%/);
+              if (m && m[1]) { macroData[6].actual = parseFloat(m[1]); updateRowUI(6); }
             }
           }).catch(() => {});
       } catch (e) {}
