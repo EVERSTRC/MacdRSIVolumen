@@ -33,9 +33,9 @@
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-binance-dark p-4 rounded-2xl border border-binance-border shadow-xl">
       <div>
         <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE</span>
+          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE (PURE HTML)</span>
         </h1>
-        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side</p>
+        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side • Sin Instalaciones Extra</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3 bg-binance-black/60 px-4 py-2 rounded-xl border border-binance-border">
@@ -114,17 +114,119 @@
       </div>
     </div>
 
+    <!-- Módulo de Desglose de Señales por Horario -->
+    <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          ⏰ Desglose de Señales por Horario de Publicación (CR Time)
+        </h2>
+        <p class="text-xs text-gray-400 mt-1">Alineación cuantitativa del mercado según la ventana horaria de los comunicados de EE.UU. e informes institucionales VSA en hora local (Costa Rica).</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Bloque 06:30 AM -->
+        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold font-mono text-binance-yellow">06:30 AM CR</span>
+              <span id="slot-status-0630" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">Apertura Macro / CPI & NFP</h3>
+            <p class="text-xs text-gray-400 mt-1">Publicación de datos clave de inflación, desempleo e IPP de EE.UU.</p>
+          </div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
+            <span class="text-gray-400">Sesión:</span>
+            <span class="font-bold text-gray-200">Pre-Market NY</span>
+          </div>
+        </div>
+
+        <!-- Bloque 08:00 AM -->
+        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold font-mono text-binance-yellow">08:00 AM CR</span>
+              <span id="slot-status-0800" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">Apertura Contado Wall St.</h3>
+            <p class="text-xs text-gray-400 mt-1">Confianza de Michigan, PMI de Servicios y rebalanceo de ETF Spot BTC.</p>
+          </div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
+            <span class="text-gray-400">Sesión:</span>
+            <span class="font-bold text-gray-200">Open Wall Street</span>
+          </div>
+        </div>
+
+        <!-- Bloque 12:00 PM -->
+        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold font-mono text-binance-yellow">12:00 PM CR</span>
+              <span id="slot-status-1200" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">Minutas FOMC / Discursos FED</h3>
+            <p class="text-xs text-gray-400 mt-1">Decisiones de tipos de interés de la Reserva Federal y rueda de prensa.</p>
+          </div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
+            <span class="text-gray-400">Sesión:</span>
+            <span class="font-bold text-gray-200">Mid-Day NY</span>
+          </div>
+        </div>
+
+        <!-- Bloque Cierre / Asia -->
+        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold font-mono text-binance-yellow">04:00 PM CR</span>
+              <span id="slot-status-1600" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">EN ESPERA ⏳</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">Cierre Diario & Apertura Asia</h3>
+            <p class="text-xs text-gray-400 mt-1">Fijación de precio de cierre UTC y liquidez inicial de mercados asiáticos.</p>
+          </div>
+          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
+            <span class="text-gray-400">Sesión:</span>
+            <span class="font-bold text-gray-200">Asia Open</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 
+  <footer class="max-w-7xl mx-auto w-full text-center text-xs text-gray-500 my-4 font-mono">
+    Dashboard Cuantitativo BTCUSD • Indicadores Pinescript v5 S/R + VSA + Trend Signals Sincronizados con Binance.
+  </footer>
+
+  <!-- Engine Script -->
   <script>
     let currentPrice = 0, currentTechPos = 50;
 
+    // Estructura de datos
     const macroData = [
       { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
       { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
       { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
       { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false }
     ];
+
+    function updateRowUI(index) {
+      const item = macroData[index];
+      const evalRes = evaluateMacroItem(item);
+      const row = document.getElementById(`macro-row-${index}`);
+      if (!row) return;
+
+      const statusCell = row.querySelector('.status-cell');
+      const scoreCell = row.querySelector('.score-cell');
+
+      if (statusCell) {
+        statusCell.innerHTML = `<span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>`;
+      }
+      if (scoreCell) {
+        scoreCell.className = `py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}`;
+        scoreCell.innerText = `${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts`;
+      }
+    }
 
     function evaluateMacroItem(item) {
       if (item.actual === null || isNaN(item.actual)) {
@@ -141,6 +243,62 @@
         status: isPositive ? "BULLISH 🟢" : "BEARISH 🔴",
         badgeClass: isPositive ? "bg-emerald-950 text-binance-green border-emerald-800" : "bg-rose-950 text-binance-red border-rose-800"
       };
+    }
+
+    function updateTimeSlotBadges() {
+      // 06:30 AM items
+      const items0630 = macroData.filter(i => i.date === "06:30 AM");
+      let score0630 = 0;
+      let count0630 = 0;
+      items0630.forEach(i => {
+        if (i.actual !== null && !isNaN(i.actual)) {
+          score0630 += evaluateMacroItem(i).score;
+          count0630++;
+        }
+      });
+      const badge0630 = document.getElementById("slot-status-0630");
+      if (badge0630) {
+        if (count0630 === 0) {
+          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+          badge0630.innerText = "PENDIENTE ⏳";
+        } else if (score0630 > 0) {
+          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
+          badge0630.innerText = "BULLISH 🟢";
+        } else if (score0630 < 0) {
+          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
+          badge0630.innerText = "BEARISH 🔴";
+        } else {
+          badge0630.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+          badge0630.innerText = "NEUTRAL 🟡";
+        }
+      }
+
+      // 08:00 AM items
+      const items0800 = macroData.filter(i => i.date === "08:00 AM");
+      let score0800 = 0;
+      let count0800 = 0;
+      items0800.forEach(i => {
+        if (i.actual !== null && !isNaN(i.actual)) {
+          score0800 += evaluateMacroItem(i).score;
+          count0800++;
+        }
+      });
+      const badge0800 = document.getElementById("slot-status-0800");
+      if (badge0800) {
+        if (count0800 === 0) {
+          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+          badge0800.innerText = "PENDIENTE ⏳";
+        } else if (score0800 > 0) {
+          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
+          badge0800.innerText = "BULLISH 🟢";
+        } else if (score0800 < 0) {
+          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
+          badge0800.innerText = "BEARISH 🔴";
+        } else {
+          badge0800.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
+          badge0800.innerText = "NEUTRAL 🟡";
+        }
+      }
     }
 
     function calculateSignal() {
@@ -171,24 +329,8 @@
           signalOutput.className = "text-3xl font-black text-binance-yellow my-3";
         }
       }
-    }
 
-    function updateRowUI(index) {
-      const item = macroData[index];
-      const evalRes = evaluateMacroItem(item);
-      const row = document.getElementById(`macro-row-${index}`);
-      if (!row) return;
-
-      const statusCell = row.querySelector('.status-cell');
-      const scoreCell = row.querySelector('.score-cell');
-
-      if (statusCell) {
-        statusCell.innerHTML = `<span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>`;
-      }
-      if (scoreCell) {
-        scoreCell.className = `py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}`;
-        scoreCell.innerText = `${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts`;
-      }
+      updateTimeSlotBadges();
     }
 
     function renderMacroTable() {
