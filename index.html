@@ -35,7 +35,7 @@
         <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
           BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE (PURE HTML)</span>
         </h1>
-        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side • Sin Instalaciones Extra</p>
+        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side • FMP API Active</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3 bg-binance-black/60 px-4 py-2 rounded-xl border border-binance-border">
@@ -91,9 +91,9 @@
     <!-- Macro Table -->
     <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
       <div class="flex justify-between items-center pb-2 border-b border-gray-800">
-        <h2 class="text-lg font-bold text-white">🌐 Calendario Económico Macro (Sincronización Autónoma HTML)</h2>
+        <h2 class="text-lg font-bold text-white">🌐 Calendario Económico Macro (Sincronización API FMP)</h2>
         <span id="last-sync-time" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800">
-          🟢 Auto-Sync Activo
+          🟢 Auto-Sync FMP Activo
         </span>
       </div>
 
@@ -104,7 +104,7 @@
               <th class="py-3 px-3">Hora (CR)</th>
               <th class="py-3 px-3">Evento Macro</th>
               <th class="py-3 px-3 text-center">Previsión</th>
-              <th class="py-3 px-3 text-center">Dato Actual (Auto API / Editable)</th>
+              <th class="py-3 px-3 text-center">Dato Actual (API / Editable)</th>
               <th class="py-3 px-3 text-center">Impacto</th>
               <th class="py-3 px-3 text-right">Dirección BTCUSD</th>
             </tr>
@@ -200,16 +200,17 @@
 
   <!-- Engine Script -->
   <script>
+    const FMP_API_KEY = "exL5USAvIGPpWF1HKYN6cL2pPU5Z550g";
     let currentPrice = 0, currentTechPos = 50;
 
     const macroData = [
-      { id: "import_price", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
-      { id: "export_price", date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
-      { id: "cpi", date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
-      { id: "nfp", date: "06:30 AM", name: "NFP Nóminas No Agrícolas", forecast: 175, actual: null, unit: "K", weight: 2.0, invert: false },
-      { id: "jobless_claims", date: "06:30 AM", name: "Peticiones de Subsidio Desempleo", forecast: 220, actual: null, unit: "K", weight: 1.0, invert: true },
-      { id: "pmi", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false },
-      { id: "fed_rate", date: "12:00 PM", name: "Decisión Tipos de Interés FED", forecast: 4.75, actual: null, unit: "%", weight: 2.5, invert: true }
+      { id: "import_price", searchKeys: ["import price", "import prices"], date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
+      { id: "export_price", searchKeys: ["export price", "export prices"], date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
+      { id: "cpi", searchKeys: ["cpi", "core cpi", "consumer price index"], date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
+      { id: "nfp", searchKeys: ["non farm payrolls", "nfp", "nonfarm payrolls"], date: "06:30 AM", name: "NFP Nóminas No Agrícolas", forecast: 175, actual: null, unit: "K", weight: 2.0, invert: false },
+      { id: "jobless_claims", searchKeys: ["initial jobless claims", "jobless claims"], date: "06:30 AM", name: "Peticiones de Subsidio Desempleo", forecast: 220, actual: null, unit: "K", weight: 1.0, invert: true },
+      { id: "pmi", searchKeys: ["ism services pmi", "pmi services", "pmi"], date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false },
+      { id: "fed_rate", searchKeys: ["fed interest rate decision", "fed rate", "federal funds rate"], date: "12:00 PM", name: "Decisión Tipos de Interés FED", forecast: 4.75, actual: null, unit: "%", weight: 2.5, invert: true }
     ];
 
     function evaluateMacroItem(item) {
@@ -355,55 +356,40 @@
       calculateSignal();
     }
 
-    function autoSyncMacroData() {
+    async function autoSyncMacroData() {
       const syncBadge = document.getElementById("last-sync-time");
+      const today = new Date().toISOString().split('T')[0];
       
       try {
-        fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://min-api.cryptocompare.com/data/v2/news/?lang=EN"))
-          .then(res => res.json())
-          .then(data => {
-            const text = (data.Data || []).map(n => (n.title || "") + " " + (n.body || "")).join(" ").toLowerCase();
-            
-            // 1. Import Price
-            if (text.includes("import price")) {
-              const m = text.match(/import price[s]?\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) { macroData[0].actual = parseFloat(m[1]); updateRowUI(0); }
-            }
-            // 2. Export Price
-            if (text.includes("export price")) {
-              const m = text.match(/export price[s]?\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) { macroData[1].actual = parseFloat(m[1]); updateRowUI(1); }
-            }
-            // 3. CPI
-            if (text.includes("cpi") || text.includes("consumer price index")) {
-              const m = text.match(/cpi\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) { macroData[2].actual = parseFloat(m[1]); updateRowUI(2); }
-            }
-            // 4. NFP
-            if (text.includes("nonfarm payrolls") || text.includes("nfp")) {
-              const m = text.match(/(?:nonfarm payrolls|nfp)\b.*?\b(\d+)k/);
-              if (m && m[1]) { macroData[3].actual = parseFloat(m[1]); updateRowUI(3); }
-            }
-            // 5. Jobless Claims
-            if (text.includes("jobless claims") || text.includes("unemployment claims")) {
-              const m = text.match(/jobless claims\b.*?\b(\d+)k/);
-              if (m && m[1]) { macroData[4].actual = parseFloat(m[1]); updateRowUI(4); }
-            }
-            // 6. PMI
-            if (text.includes("pmi") || text.includes("ism services")) {
-              const m = text.match(/pmi\b.*?\b(\d+\.\d+)/);
-              if (m && m[1]) { macroData[5].actual = parseFloat(m[1]); updateRowUI(5); }
-            }
-            // 7. FED Rate
-            if (text.includes("fed rate") || text.includes("interest rate decision") || text.includes("fomc")) {
-              const m = text.match(/(?:fed|rate)\b.*?\b(\d+\.\d+)%/);
-              if (m && m[1]) { macroData[6].actual = parseFloat(m[1]); updateRowUI(6); }
-            }
-          }).catch(() => {});
-      } catch (e) {}
+        const response = await fetch(`https://financialmodelingprep.com/api/v3/economic_calendar?from=${today}&to=${today}&apikey=${FMP_API_KEY}`);
+        const data = await response.json();
 
-      if (syncBadge) {
-        syncBadge.innerText = `🤖 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
+        if (Array.isArray(data)) {
+          data.forEach(event => {
+            const eventName = (event.event || "").toLowerCase();
+            
+            macroData.forEach((item, index) => {
+              const matches = item.searchKeys.some(key => eventName.includes(key));
+              if (matches) {
+                if (event.actual !== null && event.actual !== undefined && event.actual !== "") {
+                  item.actual = parseFloat(event.actual);
+                  updateRowUI(index);
+                }
+                if (event.estimate !== null && event.estimate !== undefined && event.estimate !== "") {
+                  item.forecast = parseFloat(event.estimate);
+                }
+              }
+            });
+          });
+        }
+
+        if (syncBadge) {
+          syncBadge.innerText = `🟢 Auto-Sync FMP API: ${new Date().toLocaleTimeString("es-CR")}`;
+        }
+      } catch (e) {
+        if (syncBadge) {
+          syncBadge.innerText = `🟡 Auto-Sync Standby: ${new Date().toLocaleTimeString("es-CR")}`;
+        }
       }
 
       calculateSignal();
@@ -469,7 +455,7 @@
       renderMacroTable();
       initBinanceWS();
       autoSyncMacroData();
-      setInterval(autoSyncMacroData, 60000);
+      setInterval(autoSyncMacroData, 30000);
     });
   </script>
 </body>
