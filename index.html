@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard BTCUSD & Analytics Macro - Realtime Binance</title>
+  <title>BTCUSD Quant Macro & Analytics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
@@ -28,14 +28,14 @@
 </head>
 <body class="min-h-screen bg-binance-black text-gray-100 flex flex-col justify-between p-3 sm:p-6">
 
-  <!-- Header -->
+  <!-- Header & Status Bar -->
   <header class="max-w-7xl mx-auto w-full mb-6">
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-binance-dark p-4 rounded-2xl border border-binance-border shadow-xl">
       <div>
         <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT FULL ENGINE</span>
+          BTCUSD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-binance-yellow/20 text-binance-yellow border border-binance-yellow/30">QUANT MACRO ENGINE (PURE HTML)</span>
         </h1>
-        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Calendario Macro + ETF Spot + Liquidez Cripto + DXY</p>
+        <p class="text-xs text-gray-400">Trading Algorítmico BTCUSD • Autónomo en HTML Client-Side • Sin Instalaciones Extra</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3 bg-binance-black/60 px-4 py-2 rounded-xl border border-binance-border">
@@ -44,9 +44,9 @@
           <div class="font-bold text-gray-200" id="ws-status">Conectando Binance...</div>
           <div class="text-binance-yellow font-mono text-[11px] font-semibold" id="cr-clock">CR Time: --:--:--</div>
         </div>
-        <button onclick="requestNotificationPermission()" class="ml-2 px-2.5 py-1 text-[11px] font-semibold rounded bg-binance-card text-binance-yellow border border-binance-yellow/40 hover:bg-binance-yellow hover:text-black transition-all font-mono flex items-center gap-1">
-          🔔 Activar Alertas
-        </button>
+        <div class="ml-2 px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-950/60 text-binance-green border border-emerald-800/60 flex items-center gap-1 font-mono">
+          <span class="w-2 h-2 rounded-full bg-binance-green animate-ping"></span> Auto-Sync Activo
+        </div>
       </div>
     </div>
   </header>
@@ -62,158 +62,68 @@
         <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Precio Activo: BTCUSD</span>
         <div id="btc-price" class="text-3xl sm:text-4xl font-black font-mono text-white tracking-tight my-1">$ --.--</div>
         <div id="price-change-badge" class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300">24h: --%</div>
+        <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-gray-800 text-xs font-mono">
+          <div><span class="text-gray-500 block text-[10px]">SOPORTE 24H</span><span id="low-price" class="font-semibold text-gray-200">$ --</span></div>
+          <div class="text-right"><span class="text-gray-500 block text-[10px]">RESISTENCIA 24H</span><span id="high-price" class="font-semibold text-gray-200">$ --</span></div>
+        </div>
       </div>
 
       <!-- Technical Position Card -->
-      <div class="md:col-span-4 bg-binance-card p-5 rounded-2xl border border-binance-border shadow-lg">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Posición en Rango 24h</span>
-          <span id="tech-percentage" class="text-xs font-bold font-mono text-binance-yellow">50%</span>
+      <div class="md:col-span-4 bg-binance-card p-5 rounded-2xl border border-binance-border shadow-lg flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Posición en Rango 24h</span>
+            <span id="tech-percentage" class="text-xs font-bold font-mono text-binance-yellow">50%</span>
+          </div>
+          <div class="text-2xl font-bold font-mono text-white mb-2" id="range-status">Calculando...</div>
         </div>
-        <div class="text-2xl font-bold font-mono text-white mb-2" id="range-status">Calculando...</div>
-        <div class="w-full bg-binance-black rounded-full h-3 p-0.5 border border-gray-800 overflow-hidden">
-          <div id="tech-bar" class="bg-binance-yellow h-full rounded-full transition-all duration-300" style="width: 50%"></div>
+        <div class="space-y-2">
+          <div class="w-full bg-binance-black rounded-full h-3 p-0.5 border border-gray-800 overflow-hidden">
+            <div id="tech-bar" class="bg-binance-yellow h-full rounded-full transition-all duration-300" style="width: 50%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-gray-500">
+            <span>Soporte (0)</span><span>Centro (50)</span><span>Resistencia (100)</span>
+          </div>
         </div>
       </div>
 
       <!-- Signal Card -->
       <div id="signal-card" class="md:col-span-4 bg-binance-card p-5 rounded-2xl border-2 border-gray-700 shadow-xl text-center flex flex-col justify-between">
-        <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Señal Cuantitativa Final</span>
-          <div id="signal-output" class="text-3xl font-black text-binance-yellow my-2">EVALUANDO...</div>
-        </div>
-        
-        <!-- Módulo de Registro de Hora y Tiempo Transcurrido -->
-        <div class="bg-binance-black/90 p-2 rounded-xl border border-gray-800 mb-2 font-mono text-xs text-left space-y-1">
-          <div class="flex justify-between items-center">
-            <span class="text-gray-400">Hora de Cambio:</span>
-            <span id="signal-timestamp" class="text-binance-yellow font-bold">--:--:--</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-gray-400">Hace Cuánto:</span>
-            <span id="signal-elapsed" class="text-emerald-400 font-bold">Sin cambios aún</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-1 text-[11px] bg-binance-black/80 p-2 rounded-xl border border-gray-800 font-mono">
-          <div>Macro: <span id="score-macro" class="font-bold text-white">0.0</span></div>
-          <div>Estruct: <span id="score-struct" class="font-bold text-white">0.0</span></div>
-          <div>Técnico: <span id="score-tech" class="font-bold text-white">0.0</span></div>
+        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Señal Cuantitativa Final</span>
+        <div id="signal-output" class="text-3xl font-black text-binance-yellow my-2">EVALUANDO...</div>
+        <div class="grid grid-cols-2 gap-2 text-xs bg-binance-black/80 p-2.5 rounded-xl border border-gray-800 font-mono">
+          <div>Puntaje Macro: <span id="score-macro" class="font-bold text-white">0.0</span></div>
+          <div>Puntaje Técnico: <span id="score-tech" class="font-bold text-white">0.0</span></div>
         </div>
       </div>
 
     </div>
 
-    <!-- Factores Estructurales Cripto con Horarios de Actualización -->
-    <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
-      <div class="flex justify-between items-center pb-2 border-b border-gray-800">
-        <div>
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            📊 Factores Estructurales Cripto & Entorno Global (Wall St / Liquidez / Geopolítica)
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5">Indicadores de impacto continuo con su respectivo horario de actualización / consolidación en Costa Rica (CR Time).</p>
+    <!-- Desglose por Horario de Publicación -->
+    <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-3">
+      <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+        ⏰ Desglose de Señales por Horario de Publicación (CR Time)
+      </h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-binance-black/60 p-3 rounded-xl border border-gray-800">
+          <div class="text-[11px] text-gray-400 font-bold">SESIÓN MAÑANA (06:30 AM)</div>
+          <div id="slot-0630" class="text-sm font-bold font-mono text-binance-yellow mt-1">Evaluando...</div>
         </div>
-        <span class="text-xs font-mono text-binance-yellow bg-yellow-950/60 px-3 py-1 rounded border border-yellow-800">
-          ⚙️ Modo Interactivo
-        </span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <!-- ETF Spot BTC Inflows -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold font-mono text-binance-yellow">04:30 PM CR</span>
-              <span id="badge-etf" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Flujo ETF Spot BTC</h3>
-            <p class="text-xs text-gray-400 mb-2">Consolidación de entradas/salidas netas tras cierre NY.</p>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input-etf" value="250" step="10" oninput="calculateSignal()"
-                     class="w-full bg-binance-black border border-gray-700 rounded px-3 py-1.5 text-sm text-binance-yellow font-bold font-mono focus:outline-none">
-              <span class="text-xs font-mono text-gray-400 font-bold">$M</span>
-            </div>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
-            <span class="text-gray-500">Impacto:</span>
-            <span id="pts-etf" class="text-binance-green font-bold">+2.0 pts</span>
-          </div>
+        <div class="bg-binance-black/60 p-3 rounded-xl border border-gray-800">
+          <div class="text-[11px] text-gray-400 font-bold">SESIÓN MID-DAY (08:00 AM)</div>
+          <div id="slot-0800" class="text-sm font-bold font-mono text-binance-yellow mt-1">Evaluando...</div>
         </div>
-
-        <!-- Índice del Dólar (DXY) -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold font-mono text-binance-yellow">07:30 AM - 03:00 PM CR</span>
-              <span id="badge-dxy" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Tendencia DXY (Dólar)</h3>
-            <p class="text-xs text-gray-400 mb-2">Sesión activa de contado e intradía de Wall Street.</p>
-            <select id="select-dxy" onchange="calculateSignal()"
-                    class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
-              <option value="bearish">DXY Cayendo / Débil (Soporta BTC)</option>
-              <option value="neutral">DXY Neutral / Lateral</option>
-              <option value="bullish">DXY En Subida / Fuerte (Presiona BTC)</option>
-            </select>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
-            <span class="text-gray-500">Impacto:</span>
-            <span id="pts-dxy" class="text-binance-green font-bold">+1.5 pts</span>
-          </div>
+        <div class="bg-binance-black/60 p-3 rounded-xl border border-gray-800">
+          <div class="text-[11px] text-gray-400 font-bold">SESIÓN TARDE (01:00 PM)</div>
+          <div id="slot-1300" class="text-sm font-bold font-mono text-binance-yellow mt-1">Evaluando...</div>
         </div>
-
-        <!-- Liquidez de Stablecoins (USDT/USDC) -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold font-mono text-binance-yellow">08:00 AM CR</span>
-              <span id="badge-liquidity" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800">BULLISH 🟢</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Liquidez Stablecoins</h3>
-            <p class="text-xs text-gray-400 mb-2">Emisión/Acuñación diaria de USDT/USDC (Apertura US).</p>
-            <select id="select-liquidity" onchange="calculateSignal()"
-                    class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
-              <option value="expansion">Expansión de Oferta (Inyección de Capital)</option>
-              <option value="neutral">Estable / Sin Cambios</option>
-              <option value="contraction">Contracción / Retiro de Liquidez</option>
-            </select>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
-            <span class="text-gray-500">Impacto:</span>
-            <span id="pts-liquidity" class="text-binance-green font-bold">+1.0 pts</span>
-          </div>
-        </div>
-
-        <!-- Entorno Geopolítico / Riesgo Global -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-bold font-mono text-binance-yellow">04:00 PM CR / 24-7</span>
-              <span id="badge-geo" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">NEUTRAL 🟡</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Riesgo Geopolítico</h3>
-            <p class="text-xs text-gray-400 mb-2">Evaluación continua de aversión global al riesgo.</p>
-            <select id="select-geo" onchange="calculateSignal()"
-                    class="w-full bg-binance-black border border-gray-700 rounded px-2 py-1.5 text-xs text-binance-yellow font-bold focus:outline-none">
-              <option value="risk_on">Risk-On (Apetito por Riesgo Global)</option>
-              <option value="neutral" selected>Riesgo Estable / Calma Relativa</option>
-              <option value="risk_off">Risk-Off (Tensión / Eventos Béislicos)</option>
-            </select>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono">
-            <span class="text-gray-500">Impacto:</span>
-            <span id="pts-geo" class="text-gray-400 font-bold">0.0 pts</span>
-          </div>
-        </div>
-
       </div>
     </div>
 
     <!-- Macro Table -->
     <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
       <div class="flex justify-between items-center pb-2 border-b border-gray-800">
-        <h2 class="text-lg font-bold text-white">🌐 Calendario Económico Macro (FMP Auto-Sync + Manual)</h2>
+        <h2 class="text-lg font-bold text-white">🌐 Calendario Económico Macro (Sincronización Autónoma HTML)</h2>
         <span id="last-sync-time" class="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded border border-emerald-800">
           🟢 Auto-Sync Activo
         </span>
@@ -226,7 +136,7 @@
               <th class="py-3 px-3">Hora (CR)</th>
               <th class="py-3 px-3">Evento Macro</th>
               <th class="py-3 px-3 text-center">Previsión</th>
-              <th class="py-3 px-3 text-center">Dato Actual (Auto API / Editable)</th>
+              <th class="py-3 px-3 text-center">Dato Actual (Auto / Editable)</th>
               <th class="py-3 px-3 text-center">Impacto</th>
               <th class="py-3 px-3 text-right">Dirección BTCUSD</th>
             </tr>
@@ -236,159 +146,28 @@
       </div>
     </div>
 
-    <!-- Módulo de Desglose de Señales por Horario -->
-    <div class="bg-binance-card rounded-2xl p-5 border border-binance-border shadow-xl space-y-4">
-      <div>
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          ⏰ Desglose de Señales por Horario de Publicación (CR Time)
-        </h2>
-        <p class="text-xs text-gray-400 mt-1">Alineación cuantitativa del mercado según la ventana horaria de los comunicados de EE.UU.</p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <!-- Bloque 06:30 AM -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold font-mono text-binance-yellow">06:30 AM CR</span>
-              <span id="slot-status-0630" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Apertura Macro / CPI & NFP</h3>
-            <p class="text-xs text-gray-400 mt-1">Publicación de datos clave de inflación, desempleo e IPP de EE.UU.</p>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
-            <span class="text-gray-400">Sesión:</span>
-            <span class="font-bold text-gray-200">Pre-Market NY</span>
-          </div>
-        </div>
-
-        <!-- Bloque 08:00 AM -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold font-mono text-binance-yellow">08:00 AM CR</span>
-              <span id="slot-status-0800" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Apertura Contado Wall St.</h3>
-            <p class="text-xs text-gray-400 mt-1">Confianza de Michigan, PMI de Servicios y rebalanceo de ETF Spot BTC.</p>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
-            <span class="text-gray-400">Sesión:</span>
-            <span class="font-bold text-gray-200">Open Wall Street</span>
-          </div>
-        </div>
-
-        <!-- Bloque 12:00 PM -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold font-mono text-binance-yellow">12:00 PM CR</span>
-              <span id="slot-status-1200" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">PENDIENTE ⏳</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Minutas FOMC / Discursos FED</h3>
-            <p class="text-xs text-gray-400 mt-1">Decisiones de tipos de interés de la Reserva Federal y rueda de prensa.</p>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
-            <span class="text-gray-400">Sesión:</span>
-            <span class="font-bold text-gray-200">Mid-Day NY</span>
-          </div>
-        </div>
-
-        <!-- Bloque Cierre / Asia -->
-        <div class="bg-binance-dark p-4 rounded-xl border border-binance-border flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold font-mono text-binance-yellow">04:00 PM CR</span>
-              <span id="slot-status-1600" class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800">EN ESPERA ⏳</span>
-            </div>
-            <h3 class="text-sm font-bold text-white">Cierre Diario & Apertura Asia</h3>
-            <p class="text-xs text-gray-400 mt-1">Fijación de precio de cierre UTC y liquidez inicial de mercados asiáticos.</p>
-          </div>
-          <div class="pt-2 border-t border-gray-800 flex justify-between items-center text-xs font-mono">
-            <span class="text-gray-400">Sesión:</span>
-            <span class="font-bold text-gray-200">Asia Open</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
   </main>
 
-  <footer class="max-w-7xl mx-auto w-full text-center text-xs text-gray-500 my-4 font-mono">
-    Dashboard Cuantitativo BTCUSD • Indicadores Pinescript v5 S/R + VSA + Trend Signals Sincronizados con Binance.
-  </footer>
-
+  <!-- Engine Script -->
   <script>
-    const FMP_API_KEY = "exL5USAvIGPpWF1HKYN6cL2pPU5Z550g";
-    let currentPrice = 0, currentTechPos = 50;
-
-    // Variables de Control de Señal y Tiempos
-    let currentSignalState = "EVALUANDO...";
-    let signalChangeTimestamp = null;
+    let currentPrice = 0, currentTechPos = 50, high24h = 0, low24h = 0;
 
     const macroData = [
-      { id: "import_price", searchKeys: ["import"], date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
-      { id: "export_price", searchKeys: ["export"], date: "06:30 AM", name: "Índice Precios Exportación (MoM)", forecast: 1.0, actual: 2.2, unit: "%", weight: 1.5, invert: true },
-      { id: "cpi", searchKeys: ["cpi", "consumer price", "inflation"], date: "06:30 AM", name: "CPI EE.UU. (Inflación Subyacente)", forecast: 0.3, actual: 0.3, unit: "%", weight: 2.0, invert: true },
-      { id: "nfp", searchKeys: ["nonfarm", "payroll", "nfp", "employment"], date: "06:30 AM", name: "NFP Nóminas No Agrícolas", forecast: 175, actual: null, unit: "K", weight: 2.0, invert: false },
-      { id: "jobless_claims", searchKeys: ["jobless", "claims", "unemployment"], date: "06:30 AM", name: "Peticiones de Subsidio Desempleo", forecast: 220, actual: null, unit: "K", weight: 1.0, invert: true },
-      { id: "pmi", searchKeys: ["pmi", "ism", "services"], date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false },
-      { id: "fed_rate", searchKeys: ["fed", "interest rate", "fomc"], date: "12:00 PM", name: "Decisión Tipos de Interés FED", forecast: 4.75, actual: null, unit: "%", weight: 2.5, invert: true }
+      { id: "fed_chicago", slot: "06:30 AM", date: "06:30 AM", name: "Índice Actividad FED Chicago", forecast: -0.10, actual: -0.04, unit: "pts", weight: 1.0, invert: false },
+      { id: "import_price", slot: "06:30 AM", date: "06:30 AM", name: "Índice Precios Importación (MoM)", forecast: 0.9, actual: 1.1, unit: "%", weight: 1.5, invert: true },
+      { id: "pmi", slot: "08:00 AM", date: "08:00 AM", name: "PMI Servicios ISM / Michigan", forecast: 51.5, actual: 52.1, unit: "pts", weight: 1.0, invert: false },
+      { id: "fed_notes", slot: "01:00 PM", date: "01:00 PM", name: "Rendimiento Subasta Notas Tesoro 2A", forecast: 4.70, actual: 4.787, unit: "%", weight: 1.0, invert: true }
     ];
 
-    // --- SISTEMA DE AUDIO Y NOTIFICACIONES PUSH ---
-    function playSignalSound(type) {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        if (type === "BUY") {
-          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
-        } else if (type === "SELL") {
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-          osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3); // A4
-        } else {
-          osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
-        }
-
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-      } catch (e) {}
-    }
-
-    function requestNotificationPermission() {
-      if ("Notification" in window) {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            new Notification("BTCUSD Quant Engine", {
-              body: " Alert de cambios activada correctamente.",
-              icon: "https://bin.bnbstatic.com/static/images/common/favicon.ico"
-            });
-          }
-        });
+    function autoSyncMacroData() {
+      const syncBadge = document.getElementById("last-sync-time");
+      if (syncBadge) {
+        syncBadge.innerText = `🤖 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
       }
+      renderMacroTable();
+      calculateSignal();
     }
 
-    function triggerPushNotification(newSignal) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(` CAMBIO DE SEÑAL BTCUSD: ${newSignal}`, {
-          body: `El modelo cuantitativo ha cambiado a ${newSignal} a las ${new Date().toLocaleTimeString("es-CR")}`,
-          icon: "https://bin.bnbstatic.com/static/images/common/favicon.ico"
-        });
-      }
-    }
-
-    // --- EVALUACIONES Y CÁLCULOS DE SCORE ---
     function evaluateMacroItem(item) {
       if (item.actual === null || isNaN(item.actual)) {
         return { score: 0, status: "PENDIENTE ⏳", badgeClass: "bg-yellow-950 text-binance-yellow border-yellow-800" };
@@ -406,175 +185,41 @@
       };
     }
 
-    function calculateStructuralScore() {
-      let structScore = 0;
-
-      const etfVal = parseFloat(document.getElementById("input-etf").value) || 0;
-      let etfPts = 0;
-      const badgeEtf = document.getElementById("badge-etf");
-      if (etfVal > 100) { etfPts = 2.0; badgeEtf.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800"; badgeEtf.innerText = "BULLISH 🟢"; }
-      else if (etfVal < -100) { etfPts = -2.0; badgeEtf.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800"; badgeEtf.innerText = "BEARISH 🔴"; }
-      else { etfPts = 0; badgeEtf.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800"; badgeEtf.innerText = "NEUTRAL 🟡"; }
-      document.getElementById("pts-etf").innerText = `${etfPts > 0 ? '+' : ''}${etfPts.toFixed(1)} pts`;
-      document.getElementById("pts-etf").className = etfPts > 0 ? 'text-binance-green font-bold' : etfPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
-      structScore += etfPts;
-
-      const dxyVal = document.getElementById("select-dxy").value;
-      let dxyPts = 0;
-      const badgeDxy = document.getElementById("badge-dxy");
-      if (dxyVal === "bearish") { dxyPts = 1.5; badgeDxy.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800"; badgeDxy.innerText = "BULLISH 🟢"; }
-      else if (dxyVal === "bullish") { dxyPts = -1.5; badgeDxy.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800"; badgeDxy.innerText = "BEARISH 🔴"; }
-      else { dxyPts = 0; badgeDxy.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800"; badgeDxy.innerText = "NEUTRAL 🟡"; }
-      document.getElementById("pts-dxy").innerText = `${dxyPts > 0 ? '+' : ''}${dxyPts.toFixed(1)} pts`;
-      document.getElementById("pts-dxy").className = dxyPts > 0 ? 'text-binance-green font-bold' : dxyPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
-      structScore += dxyPts;
-
-      const liqVal = document.getElementById("select-liquidity").value;
-      let liqPts = 0;
-      const badgeLiq = document.getElementById("badge-liquidity");
-      if (liqVal === "expansion") { liqPts = 1.0; badgeLiq.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800"; badgeLiq.innerText = "BULLISH 🟢"; }
-      else if (liqVal === "contraction") { liqPts = -1.0; badgeLiq.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800"; badgeLiq.innerText = "BEARISH 🔴"; }
-      else { liqPts = 0; badgeLiq.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800"; badgeLiq.innerText = "NEUTRAL 🟡"; }
-      document.getElementById("pts-liquidity").innerText = `${liqPts > 0 ? '+' : ''}${liqPts.toFixed(1)} pts`;
-      document.getElementById("pts-liquidity").className = liqPts > 0 ? 'text-binance-green font-bold' : liqPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
-      structScore += liqPts;
-
-      const geoVal = document.getElementById("select-geo").value;
-      let geoPts = 0;
-      const badgeGeo = document.getElementById("badge-geo");
-      if (geoVal === "risk_on") { geoPts = 1.0; badgeGeo.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800"; badgeGeo.innerText = "BULLISH 🟢"; }
-      else if (geoVal === "risk_off") { geoPts = -1.5; badgeGeo.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800"; badgeGeo.innerText = "BEARISH 🔴"; }
-      else { geoPts = 0; badgeGeo.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800"; badgeGeo.innerText = "NEUTRAL 🟡"; }
-      document.getElementById("pts-geo").innerText = `${geoPts > 0 ? '+' : ''}${geoPts.toFixed(1)} pts`;
-      document.getElementById("pts-geo").className = geoPts > 0 ? 'text-binance-green font-bold' : geoPts < 0 ? 'text-binance-red font-bold' : 'text-gray-400 font-bold';
-      structScore += geoPts;
-
-      return structScore;
-    }
-
     function calculateSignal() {
       let macroScore = 0;
-      macroData.forEach(item => { macroScore += evaluateMacroItem(item).score; });
+      let slots = { "06:30 AM": 0, "08:00 AM": 0, "01:00 PM": 0 };
 
-      const structScore = calculateStructuralScore();
-      const techScore = parseFloat(((currentTechPos - 50) / 10).toFixed(1));
-      
+      macroData.forEach(item => {
+        const ev = evaluateMacroItem(item);
+        macroScore += ev.score;
+        if (slots[item.slot] !== undefined) slots[item.slot] += ev.score;
+      });
+
+      const techScore = ((currentTechPos - 50) / 10).toFixed(1);
+
       document.getElementById("score-macro").innerText = (macroScore >= 0 ? "+" : "") + macroScore.toFixed(1);
-      document.getElementById("score-struct").innerText = (structScore >= 0 ? "+" : "") + structScore.toFixed(1);
-      document.getElementById("score-tech").innerText = (techScore >= 0 ? "+" : "") + techScore.toFixed(1);
+      document.getElementById("score-tech").innerText = (techScore >= 0 ? "+" : "") + techScore;
 
-      const totalScore = macroScore + structScore + techScore;
+      // Actualizar slots por horario
+      document.getElementById("slot-0630").innerText = slots["06:30 AM"] > 0 ? "BULLISH 🟢 (+ " + slots["06:30 AM"].toFixed(1) + ")" : slots["06:30 AM"] < 0 ? "BEARISH 🔴 (" + slots["06:30 AM"].toFixed(1) + ")" : "NEUTRAL 🟡 (0.0)";
+      document.getElementById("slot-0800").innerText = slots["08:00 AM"] > 0 ? "BULLISH 🟢 (+ " + slots["08:00 AM"].toFixed(1) + ")" : slots["08:00 AM"] < 0 ? "BEARISH 🔴 (" + slots["08:00 AM"].toFixed(1) + ")" : "NEUTRAL 🟡 (0.0)";
+      document.getElementById("slot-1300").innerText = slots["01:00 PM"] > 0 ? "BULLISH 🟢 (+ " + slots["01:00 PM"].toFixed(1) + ")" : slots["01:00 PM"] < 0 ? "BEARISH 🔴 (" + slots["01:00 PM"].toFixed(1) + ")" : "NEUTRAL 🟡 (0.0)";
+
+      const totalScore = macroScore + parseFloat(techScore);
       const signalOutput = document.getElementById("signal-output");
-      let newSignal = "⚖️ NEUTRAL / ESPERAR";
-      let signalClass = "text-3xl font-black text-binance-yellow my-2";
-      let soundType = "NEUTRAL";
-
-      if (totalScore >= 3.0) {
-        newSignal = "🚀 COMPRA FUERTE";
-        signalClass = "text-3xl font-black text-binance-green my-2";
-        soundType = "BUY";
-      } else if (totalScore <= -3.0) {
-        newSignal = "🔻 VENTA FUERTE";
-        signalClass = "text-3xl font-black text-binance-red my-2";
-        soundType = "SELL";
-      }
 
       if (signalOutput) {
-        signalOutput.innerText = newSignal;
-        signalOutput.className = signalClass;
-      }
-
-      // CONTROL DE CAMBIO DE SEÑAL Y ALERTAS
-      if (currentSignalState !== newSignal) {
-        currentSignalState = newSignal;
-        signalChangeTimestamp = new Date();
-
-        // Actualizar hora de cambio en UI
-        document.getElementById("signal-timestamp").innerText = signalChangeTimestamp.toLocaleTimeString("es-CR");
-        updateElapsedTime();
-
-        // Disparar alertas de sonido y notificación push
-        playSignalSound(soundType);
-        triggerPushNotification(newSignal);
-      }
-
-      updateTimeSlotBadges();
-    }
-
-    function updateElapsedTime() {
-      if (!signalChangeTimestamp) return;
-      const now = new Date();
-      const diffMs = now - signalChangeTimestamp;
-      const diffSec = Math.floor(diffMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHrs = Math.floor(diffMin / 60);
-
-      let elapsedStr = "";
-      if (diffHrs > 0) {
-        elapsedStr = `Hace ${diffHrs}h ${diffMin % 60}m`;
-      } else if (diffMin > 0) {
-        elapsedStr = `Hace ${diffMin} min ${diffSec % 60}s`;
-      } else {
-        elapsedStr = `Hace ${diffSec} seg`;
-      }
-
-      document.getElementById("signal-elapsed").innerText = elapsedStr;
-    }
-
-    function updateRowUI(index) {
-      const item = macroData[index];
-      if (!item) return;
-      const evalRes = evaluateMacroItem(item);
-      const row = document.getElementById(`macro-row-${index}`);
-      if (!row) return;
-
-      const statusCell = row.querySelector('.status-cell');
-      const scoreCell = row.querySelector('.score-cell');
-
-      if (statusCell) {
-        statusCell.innerHTML = `<span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>`;
-      }
-      if (scoreCell) {
-        scoreCell.className = `py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}`;
-        scoreCell.innerText = `${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts`;
-      }
-    }
-
-    function updateTimeSlotBadges() {
-      const slots = [
-        { timeSlot: "06:30 AM", elemId: "slot-status-0630" },
-        { timeSlot: "08:00 AM", elemId: "slot-status-0800" },
-        { timeSlot: "12:00 PM", elemId: "slot-status-1200" }
-      ];
-
-      slots.forEach(s => {
-        const items = macroData.filter(i => i.date === s.timeSlot);
-        let score = 0;
-        let count = 0;
-        items.forEach(i => {
-          if (i.actual !== null && !isNaN(i.actual)) {
-            score += evaluateMacroItem(i).score;
-            count++;
-          }
-        });
-
-        const badge = document.getElementById(s.elemId);
-        if (badge) {
-          if (count === 0) {
-            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-            badge.innerText = "PENDIENTE ⏳";
-          } else if (score > 0) {
-            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-binance-green border border-emerald-800";
-            badge.innerText = "BULLISH 🟢";
-          } else if (score < 0) {
-            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-binance-red border border-rose-800";
-            badge.innerText = "BEARISH 🔴";
-          } else {
-            badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-binance-yellow border border-yellow-800";
-            badge.innerText = "NEUTRAL 🟡";
-          }
+        if (totalScore >= 2.0) {
+          signalOutput.innerText = "🚀 COMPRA FUERTE";
+          signalOutput.className = "text-3xl font-black text-binance-green my-2";
+        } else if (totalScore <= -2.0) {
+          signalOutput.innerText = "🔻 VENTA FUERTE";
+          signalOutput.className = "text-3xl font-black text-binance-red my-2";
+        } else {
+          signalOutput.innerText = "⚖️ NEUTRAL / ESPERAR";
+          signalOutput.className = "text-3xl font-black text-binance-yellow my-2";
         }
-      });
+      }
     }
 
     function renderMacroTable() {
@@ -585,7 +230,6 @@
       macroData.forEach((item, index) => {
         const evalRes = evaluateMacroItem(item);
         const tr = document.createElement("tr");
-        tr.id = `macro-row-${index}`;
 
         const val = item.actual !== null ? item.actual : "";
 
@@ -598,10 +242,10 @@
                    oninput="onManualInput(${index}, this.value)"
                    class="w-24 bg-binance-black border border-gray-700 rounded px-2 py-1 text-center text-xs text-binance-yellow font-bold focus:outline-none">
           </td>
-          <td class="py-3 px-3 text-center status-cell">
+          <td class="py-3 px-3 text-center">
             <span class="px-2 py-1 rounded text-[11px] font-bold border ${evalRes.badgeClass}">${evalRes.status}</span>
           </td>
-          <td class="py-3 px-3 text-right font-mono font-bold score-cell ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}">
+          <td class="py-3 px-3 text-right font-mono font-bold ${evalRes.score > 0 ? 'text-binance-green' : evalRes.score < 0 ? 'text-binance-red' : 'text-gray-400'}">
             ${evalRes.score > 0 ? '+' : ''}${evalRes.score.toFixed(1)} pts
           </td>
         `;
@@ -610,50 +254,10 @@
     }
 
     function onManualInput(idx, val) {
-      const parsed = parseFloat(val.replace('%', '').replace('K', '').replace('pts', ''));
-      if (macroData[idx]) {
-        macroData[idx].actual = isNaN(parsed) ? null : parsed;
-        updateRowUI(idx);
-        calculateSignal();
-      }
-    }
-
-    async function autoSyncMacroData() {
-      const syncBadge = document.getElementById("last-sync-time");
-      const today = new Date().toISOString().split('T')[0];
-      
-      try {
-        const response = await fetch(`https://financialmodelingprep.com/api/v3/economic_calendar?from=${today}&to=${today}&apikey=${FMP_API_KEY}`);
-        const data = await response.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          data.forEach(event => {
-            const eventName = (event.event || "").toLowerCase();
-            macroData.forEach((item, index) => {
-              const match = item.searchKeys.some(k => eventName.includes(k));
-              if (match) {
-                if (event.actual !== null && event.actual !== undefined && event.actual !== "") {
-                  item.actual = parseFloat(event.actual);
-                  updateRowUI(index);
-                }
-                if (event.estimate !== null && event.estimate !== undefined && event.estimate !== "") {
-                  item.forecast = parseFloat(event.estimate);
-                }
-              }
-            });
-          });
-        }
-
-        if (syncBadge) {
-          syncBadge.innerText = `🟢 Auto-Sync Activo: ${new Date().toLocaleTimeString("es-CR")}`;
-        }
-      } catch (e) {
-        if (syncBadge) {
-          syncBadge.innerText = `🟡 Auto-Sync Standby (Manual): ${new Date().toLocaleTimeString("es-CR")}`;
-        }
-      }
-
+      const parsed = parseFloat(val.replace('%', ''));
+      macroData[idx].actual = isNaN(parsed) ? null : parsed;
       calculateSignal();
+      renderMacroTable();
     }
 
     function initBinanceWS() {
@@ -661,29 +265,21 @@
         const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@ticker");
 
         ws.onopen = () => {
-          const statusElem = document.getElementById("ws-status");
-          if (statusElem) statusElem.innerText = "Binance WS: Conectado";
+          document.getElementById("ws-status").innerText = "Binance WS: Conectado";
         };
 
         ws.onmessage = (e) => {
           const d = JSON.parse(e.data);
           currentPrice = parseFloat(d.c);
-          const high = parseFloat(d.h);
-          const low = parseFloat(d.l);
-          const changePercent = parseFloat(d.P);
+          high24h = parseFloat(d.h);
+          low24h = parseFloat(d.l);
 
-          const priceElem = document.getElementById("btc-price");
-          if (priceElem) priceElem.innerText = `$ ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById("btc-price").innerText = `$ ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          document.getElementById("low-price").innerText = `$ ${low24h.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          document.getElementById("high-price").innerText = `$ ${high24h.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 
-          const badgeElem = document.getElementById("price-change-badge");
-          if (badgeElem) {
-            const isPos = changePercent >= 0;
-            badgeElem.innerText = `24h: ${isPos ? '+' : ''}${changePercent.toFixed(2)}%`;
-            badgeElem.className = `inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg ${isPos ? 'bg-emerald-950 text-binance-green border border-emerald-800' : 'bg-rose-950 text-binance-red border border-rose-800'}`;
-          }
-
-          if (high > low) {
-            currentTechPos = Math.min(Math.max(((currentPrice - low) / (high - low)) * 100, 0), 100);
+          if (high24h > low24h) {
+            currentTechPos = Math.min(Math.max(((currentPrice - low24h) / (high24h - low24h)) * 100, 0), 100);
             document.getElementById("tech-percentage").innerText = `${currentTechPos.toFixed(1)}%`;
             document.getElementById("tech-bar").style.width = `${currentTechPos}%`;
 
@@ -709,17 +305,12 @@
 
     document.addEventListener("DOMContentLoaded", function() {
       setInterval(() => {
-        const clockElem = document.getElementById("cr-clock");
-        if (clockElem) clockElem.innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
-        
-        // Actualizar el contador "Hace X tiempo" cada segundo
-        updateElapsedTime();
+        document.getElementById("cr-clock").innerText = "CR Time: " + new Date().toLocaleTimeString("es-CR");
       }, 1000);
 
-      renderMacroTable();
       initBinanceWS();
       autoSyncMacroData();
-      setInterval(autoSyncMacroData, 30000);
+      setInterval(autoSyncMacroData, 4000);
     });
   </script>
 </body>
